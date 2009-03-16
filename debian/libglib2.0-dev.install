@@ -1,0 +1,7 @@
+debian/tmp/usr/include/*
+debian/tmp/usr/lib/lib*.{so,la,a}
+debian/tmp/usr/lib/glib-2.0/*
+debian/tmp/usr/lib/pkgconfig/*
+debian/tmp/usr/share/aclocal/*
+debian/tmp/usr/share/glib-2.0/*
+debian/tmp/usr/bin/*
