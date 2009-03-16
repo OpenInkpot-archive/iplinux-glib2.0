@@ -1,0 +1,5 @@
+glib2.0 (2.20.0-20090316-1) asimov; urgency=low
+
+  * First build for IPlinux
+
+ -- Alexander Kerner <lunohod@openinkpot.org>  Mon, 16 Mar 2009 15:16:37 +0000
