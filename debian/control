@@ -1,7 +1,7 @@
 Source: glib2.0
 Section: core
 Priority: optional
-Maintainer: Alexander Kerner <lunohod@opeinkpot.org>
+Maintainer: Mikhail Gusarov <dottedmag@dottedmag.net>
 XCS-Cross-Host-Build-Depends: debhelper, cdbs, cdbs-embedded, pkg-config, libtool, automake, autotools-dev, libglib2.0-dev
 Build-Depends: debhelper, cdbs, pkg-config, libtool, automake, autotools-dev, libglib2.0-dev
 Standards-Version: 3.6.2
@@ -10,7 +10,6 @@ Package: libglib2.0
 Section: core
 Architecture: any
 Depends: ${shlibs:Depends}
-Recommends: libglib2.0-data
 Conflicts: libpango1.0-0 (<< 1.11)
 Description: The GLib library of C routines
  GLib is a library containing many useful C routines for things such
@@ -52,17 +51,3 @@ Description: The GLib libraries and debugging symbols
  in /usr/lib/debug and can be used by placing that directory in
  LD_LIBRARY_PATH.
  Most people will not need this package.
-
-Package: libglib2.0-data
-Section: core
-Architecture: all
-Depends: libglib2.0 (= ${Source-Version})
-Replaces: libglib1.3, libglib1.3-data
-Conflicts: libglib1.3-data
-Description: Common files for GLib library
- GLib is a library containing many useful C routines for things such
- as trees, hashes, lists, and strings.  It is a useful general-purpose
- C library used by projects such as GTK+, GIMP, and GNOME.
- .
- This package is needed for the runtime libraries to display messages in
- languages other than English.
