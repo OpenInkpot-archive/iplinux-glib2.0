@@ -1,3 +1,10 @@
+glib2.0 (2.20.0-20090316-2) asimov; urgency=low
+
+  * Remove libglib2.0-data package.
+  * Clean up obsolete Conflicts/Provdes.
+
+ -- Mikhail Gusarov <dottedmag@dottedmag.net>  Sun, 12 Jul 2009 17:10:41 +0700
+
 glib2.0 (2.20.0-20090316-1+b1) asimov; urgency=low
 
   * Rebuild with new toolchain.
