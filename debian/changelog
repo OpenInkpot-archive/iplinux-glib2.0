@@ -1,6 +1,8 @@
 glib2.0 (2.23.1-1) zelazny; urgency=low
 
   * New upstream release.
+  * Fix broken configure answers which prevented any module from loading
+  * Rename libglib2.0 to libglib2.0-0
 
  -- Mikhail Gusarov <dottedmag@dottedmag.net>  Sat, 16 Jan 2010 14:51:15 +0600
 
