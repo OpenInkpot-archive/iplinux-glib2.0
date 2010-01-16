@@ -1,3 +1,9 @@
+glib2.0 (2.23.1-1) zelazny; urgency=low
+
+  * New upstream release.
+
+ -- Mikhail Gusarov <dottedmag@dottedmag.net>  Sat, 16 Jan 2010 14:51:15 +0600
+
 glib2.0 (2.20.0-20090316-2) asimov; urgency=low
 
   * Remove libglib2.0-data package.
