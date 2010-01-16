@@ -1,3 +1,9 @@
+glib2.0 (2.23.1-2) zelazny; urgency=low
+
+  * Fix sections of host/tools packages.
+
+ -- Mikhail Gusarov <dottedmag@dottedmag.net>  Sat, 16 Jan 2010 17:55:43 +0600
+
 glib2.0 (2.23.1-1) zelazny; urgency=low
 
   * New upstream release.
