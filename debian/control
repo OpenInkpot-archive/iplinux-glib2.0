@@ -1,9 +1,11 @@
 Source: glib2.0
-Section: core
+Section: host/tools
 Priority: optional
 Maintainer: Mikhail Gusarov <dottedmag@dottedmag.net>
 XCS-Cross-Host-Build-Depends: debhelper, cdbs, cdbs-embedded, pkg-config, libtool, automake, autotools-dev, libglib2.0-dev
-Build-Depends: debhelper, cdbs, pkg-config, libtool, automake, autotools-dev, libglib2.0-dev
+XCS-Cross-Build-Depends: libz1-dev
+Build-Depends: debhelper, cdbs, pkg-config, libtool, automake, autotools-dev, zlib1g-dev
+XCS-Cross-Mode: both
 Standards-Version: 3.6.2
 
 Package: libglib2.0
