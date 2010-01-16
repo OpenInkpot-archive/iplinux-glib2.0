@@ -5,8 +5,9 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 
 DEB_CONFIGURE_SCRIPT := ./autogen.sh
-DEB_CONFIGURE_SCRIPT_ENV += glib_cv_stack_grows=yes	\
-glib_cv_uscore=yes	\
+DEB_CONFIGURE_SCRIPT_ENV += glib_cv_long_long_format=q \
+glib_cv_stack_grows=no	\
+glib_cv_uscore=no	\
 ac_cv_func_posix_getpwuid_r=yes	\
 ac_cv_func_posix_getgrgid_r=yes
 DEB_CONFIGURE_EXTRA_FLAGS := --prefix=/usr --host=$(DEB_HOST_GNU_TYPE) --disable-rpath --disable-gtk-doc --disable-man --enable-static
