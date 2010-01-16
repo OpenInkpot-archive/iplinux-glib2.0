@@ -41,7 +41,12 @@
  * #GVolumeMonitor is for listing the user interesting devices and volumes
  * on the computer. In other words, what a file selector or file manager
  * would show in a sidebar. 
-**/
+ *
+ * #GVolumeMonitor is not <link
+ * linkend="g-main-context-push-thread-default">thread-default-context
+ * aware</link>, and so should not be used other than from the main
+ * thread, with no thread-default-context active.
+ **/
 
 G_DEFINE_TYPE (GVolumeMonitor, g_volume_monitor, G_TYPE_OBJECT);
 
@@ -57,6 +62,7 @@ enum {
   DRIVE_DISCONNECTED,
   DRIVE_CHANGED,
   DRIVE_EJECT_BUTTON,
+  DRIVE_STOP_BUTTON,
   LAST_SIGNAL
 };
 
@@ -66,10 +72,6 @@ static guint signals[LAST_SIGNAL] = { 0 };
 static void
 g_volume_monitor_finalize (GObject *object)
 {
-  GVolumeMonitor *monitor;
-
-  monitor = G_VOLUME_MONITOR (object);
-
   G_OBJECT_CLASS (g_volume_monitor_parent_class)->finalize (object);
 }
 
@@ -246,6 +248,23 @@ g_volume_monitor_class_init (GVolumeMonitorClass *klass)
                                               NULL, NULL,
                                               g_cclosure_marshal_VOID__OBJECT,
                                               G_TYPE_NONE, 1, G_TYPE_DRIVE);
+
+  /**
+   * GVolumeMonitor::drive-stop-button:
+   * @volume_monitor: The volume monitor emitting the signal.
+   * @drive: the drive where the stop button was pressed
+   *
+   * Emitted when the stop button is pressed on @drive.
+   *
+   * Since: 2.22
+   **/
+  signals[DRIVE_STOP_BUTTON] = g_signal_new (I_("drive-stop-button"),
+                                             G_TYPE_VOLUME_MONITOR,
+                                             G_SIGNAL_RUN_LAST,
+                                             G_STRUCT_OFFSET (GVolumeMonitorClass, drive_stop_button),
+                                             NULL, NULL,
+                                             g_cclosure_marshal_VOID__OBJECT,
+                                             G_TYPE_NONE, 1, G_TYPE_DRIVE);
 
 }
 

@@ -24,6 +24,7 @@
 
 #include "config.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <wchar.h>
 
@@ -60,6 +61,8 @@ g_winhttp_file_finalize (GObject *object)
   g_free (file->url.lpszUrlPath);
   g_free (file->url.lpszExtraInfo);
 
+  g_object_unref (file->vfs);
+
   G_OBJECT_CLASS (g_winhttp_file_parent_class)->finalize (object);
 }
 
@@ -76,13 +79,13 @@ g_winhttp_file_init (GWinHttpFile *winhttp)
 {
 }
 
-/**
+/*
  * _g_winhttp_file_new:
  * @vfs: GWinHttpVfs to use
  * @uri: URI of the GWinHttpFile to create.
  *
  * Returns: new winhttp #GFile.
- **/
+ */
 GFile *
 _g_winhttp_file_new (GWinHttpVfs *vfs,
                      const char  *uri)
@@ -96,7 +99,7 @@ _g_winhttp_file_new (GWinHttpVfs *vfs,
     return NULL;
 
   file = g_object_new (G_TYPE_WINHTTP_FILE, NULL);
-  file->vfs = vfs;
+  file->vfs = g_object_ref (vfs);
 
   memset (&file->url, 0, sizeof (file->url));
   file->url.dwStructSize = sizeof (file->url);
@@ -372,9 +375,19 @@ g_winhttp_file_resolve_relative_path (GFile      *file,
 
   if (*wnew_path != '/')
     {
-      wchar_t *tmp = g_new (wchar_t, wcslen (winhttp_file->url.lpszUrlPath) + 1 + wcslen (wnew_path) + 1);
-      wcscpy (tmp, winhttp_file->url.lpszUrlPath);
-      wcscat (tmp, L"/");
+      wchar_t *tmp = NULL;
+      int trailing_slash = winhttp_file->url.lpszUrlPath[winhttp_file->url.dwUrlPathLength-1] == L'/'? 1 : 0;
+      if (trailing_slash)
+	{
+	  tmp = g_new (wchar_t, wcslen (winhttp_file->url.lpszUrlPath) + wcslen (wnew_path) + 1);
+	  wcscpy (tmp, winhttp_file->url.lpszUrlPath);
+	}
+      else
+	{
+	  tmp = g_new (wchar_t, wcslen (winhttp_file->url.lpszUrlPath) + 1 + wcslen (wnew_path) + 1);
+	  wcscpy (tmp, winhttp_file->url.lpszUrlPath);
+	  wcscat (tmp, L"/");
+	}
       wcscat (tmp, wnew_path);
 
       g_free (wnew_path);
@@ -384,12 +397,12 @@ g_winhttp_file_resolve_relative_path (GFile      *file,
   child = g_object_new (G_TYPE_WINHTTP_FILE, NULL);
   child->vfs = winhttp_file->vfs;
   child->url = winhttp_file->url;
-  child->url.lpszScheme = g_memdup (winhttp_file->url.lpszScheme, winhttp_file->url.dwSchemeLength*2);
-  child->url.lpszHostName = g_memdup (winhttp_file->url.lpszHostName, winhttp_file->url.dwHostNameLength*2);
-  child->url.lpszUserName = g_memdup (winhttp_file->url.lpszUserName, winhttp_file->url.dwUserNameLength*2);
-  child->url.lpszPassword = g_memdup (winhttp_file->url.lpszPassword, winhttp_file->url.dwPasswordLength*2);
+  child->url.lpszScheme = g_memdup (winhttp_file->url.lpszScheme, (winhttp_file->url.dwSchemeLength+1)*2);
+  child->url.lpszHostName = g_memdup (winhttp_file->url.lpszHostName, (winhttp_file->url.dwHostNameLength+1)*2);
+  child->url.lpszUserName = g_memdup (winhttp_file->url.lpszUserName, (winhttp_file->url.dwUserNameLength+1)*2);
+  child->url.lpszPassword = g_memdup (winhttp_file->url.lpszPassword, (winhttp_file->url.dwPasswordLength+1)*2);
   child->url.lpszUrlPath = wnew_path;
-  child->url.dwUrlPathLength = 2*(wcslen (wnew_path)+1);
+  child->url.dwUrlPathLength = wcslen (wnew_path);
   child->url.lpszExtraInfo = NULL;
   child->url.dwExtraInfoLength = 0;
 

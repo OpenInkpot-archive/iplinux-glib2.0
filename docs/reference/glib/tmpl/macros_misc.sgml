@@ -217,7 +217,7 @@ See the GNU C documentation for details.
 Expands to the GNU C <literal>deprecated</literal> attribute if the compiler 
 is <command>gcc</command>.
 It can be used to mark typedefs, variables and functions as deprecated. 
-When called with the <option>-Wdeprecated</option> option, the compiler will 
+When called with the <option>-Wdeprecated-declarations</option> option, the compiler will 
 generate warnings when deprecated interfaces are used.
 See the GNU C documentation for details. 
 </para>
@@ -328,7 +328,7 @@ Expands to "" on all modern compilers, and to <literal>__FUNCTION__</literal>
 on <command>gcc</command> version 2.x. Don't use it.
 </para>
 
-@Deprecated: 2.16
+@Deprecated: 2.16: Use #G_STRFUNC instead.
 
 
 <!-- ##### MACRO G_GNUC_PRETTY_FUNCTION ##### -->
@@ -338,7 +338,7 @@ Expands to "" on all modern compilers, and to
 Don't use it.
 </para>
 
-@Deprecated: 2.16
+@Deprecated: 2.16: Use #G_STRFUNC instead.
 
 
 <!-- ##### MACRO G_GNUC_NO_INSTRUMENT ##### -->
@@ -403,7 +403,7 @@ Since: 2.14
 
 
 
-<!-- ##### FUNCTION G_LIKELY ##### -->
+<!-- ##### MACRO G_LIKELY ##### -->
 <para>
 Hints the compiler that the expression is likely to evaluate to a true
 value. The compiler may use this information for optimizations.
@@ -413,10 +413,9 @@ if (G_LIKELY (random () != 1))
   g_print ("not one");
 </programlisting></informalexample>
 
+@expr: the expression
 @Returns: the value of @expr
 @Since: 2.2
-<!-- # Unused Parameters # -->
-@expr: the expression
 
 
 <!-- ##### MACRO G_UNLIKELY ##### -->
@@ -555,8 +554,9 @@ printing values of type #gint64. See also #G_GINT16_FORMAT.
 Some platforms do not support scanning and printing 64 bit integers,
 even though the types are supported. On such platforms #G_GINT64_FORMAT
 is not defined. Note that scanf() may not support 64 bit integers, even
-if #G_GINT64_FORMAT is defined. Due to its weak error handling, scanf() is not 
-recommended for parsing anyway; consider using g_strtoull() instead.
+if #G_GINT64_FORMAT is defined. Due to its weak error handling, scanf()
+is not recommended for parsing anyway; consider using g_ascii_strtoull()
+instead.
 </para>
 </note>
 
@@ -625,5 +625,32 @@ printing values of type #goffset. See also #G_GINT64_FORMAT.
 
 Since: 2.20
 
+
+
+<!-- ##### MACRO G_GINTPTR_MODIFIER ##### -->
+<para>
+The platform dependent length modifier for conversion specifiers for scanning
+and printing values of type #gintptr or #guintptr. It is a string literal.
+</para>
+
+@Since: 2.22
+
+
+<!-- ##### MACRO G_GINTPTR_FORMAT ##### -->
+<para>
+This is the platform dependent conversion specifier for scanning and
+printing values of type #gintptr. 
+</para>
+
+@Since: 2.22
+
+
+<!-- ##### MACRO G_GUINTPTR_FORMAT ##### -->
+<para>
+This is the platform dependent conversion specifier for scanning and
+printing values of type #guintptr.
+</para>
+
+@Since: 2.22
 
 

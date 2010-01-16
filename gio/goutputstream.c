@@ -51,7 +51,7 @@ G_DEFINE_TYPE (GOutputStream, g_output_stream, G_TYPE_OBJECT);
 struct _GOutputStreamPrivate {
   guint closed : 1;
   guint pending : 1;
-  guint cancelled : 1;
+  guint closing : 1;
   GAsyncReadyCallback outstanding_callback;
 };
 
@@ -100,10 +100,6 @@ static gboolean g_output_stream_real_close_finish  (GOutputStream             *s
 static void
 g_output_stream_finalize (GObject *object)
 {
-  GOutputStream *stream;
-
-  stream = G_OUTPUT_STREAM (object);
-
   G_OBJECT_CLASS (g_output_stream_parent_class)->finalize (object);
 }
 
@@ -345,13 +341,14 @@ g_output_stream_flush (GOutputStream  *stream,
  * @stream: a #GOutputStream.
  * @source: a #GInputStream.
  * @flags: a set of #GOutputStreamSpliceFlags.
- * @cancellable: optional #GCancellable object, %NULL to ignore. 
- * @error: a #GError location to store the error occuring, or %NULL to 
+ * @cancellable: optional #GCancellable object, %NULL to ignore.
+ * @error: a #GError location to store the error occuring, or %NULL to
  * ignore.
  *
  * Splices an input stream into an output stream.
  *
- * Returns: a #gssize containing the size of the data spliced.
+ * Returns: a #gssize containing the size of the data spliced, or
+ *     -1 if an error occurred.
  **/
 gssize
 g_output_stream_splice (GOutputStream             *stream,
@@ -361,7 +358,7 @@ g_output_stream_splice (GOutputStream             *stream,
 			GError                   **error)
 {
   GOutputStreamClass *class;
-  gboolean res;
+  gssize bytes_copied;
 
   g_return_val_if_fail (G_IS_OUTPUT_STREAM (stream), -1);
   g_return_val_if_fail (G_IS_INPUT_STREAM (source), -1);
@@ -375,21 +372,20 @@ g_output_stream_splice (GOutputStream             *stream,
 
   if (!g_output_stream_set_pending (stream, error))
     return -1;
-  
+
   class = G_OUTPUT_STREAM_GET_CLASS (stream);
 
-  res = TRUE;
   if (cancellable)
     g_cancellable_push_current (cancellable);
-      
-  res = class->splice (stream, source, flags, cancellable, error);
-      
+
+  bytes_copied = class->splice (stream, source, flags, cancellable, error);
+
   if (cancellable)
     g_cancellable_pop_current (cancellable);
-  
+
   g_output_stream_clear_pending (stream);
 
-  return res;
+  return bytes_copied;
 }
 
 static gssize
@@ -406,16 +402,16 @@ g_output_stream_real_splice (GOutputStream             *stream,
   gboolean res;
 
   bytes_copied = 0;
-  if (class->write_fn == NULL) 
+  if (class->write_fn == NULL)
     {
       g_set_error_literal (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
                            _("Output stream doesn't implement write"));
       res = FALSE;
       goto notsupported;
     }
-  
+
   res = TRUE;
-  do 
+  do
     {
       n_read = g_input_stream_read (source, buffer, sizeof (buffer), cancellable, error);
       if (n_read == -1)
@@ -423,7 +419,7 @@ g_output_stream_real_splice (GOutputStream             *stream,
 	  res = FALSE;
 	  break;
 	}
-	
+
       if (n_read == 0)
 	break;
 
@@ -457,13 +453,14 @@ g_output_stream_real_splice (GOutputStream             *stream,
   if (flags & G_OUTPUT_STREAM_SPLICE_CLOSE_TARGET)
     {
       /* But write errors on close are bad! */
-      if (!class->close_fn (stream, cancellable, error))
+      if (class->close_fn &&
+	  !class->close_fn (stream, cancellable, error))
 	res = FALSE;
     }
 
   if (res)
     return bytes_copied;
-  
+
   return -1;
 }
 
@@ -524,6 +521,8 @@ g_output_stream_close (GOutputStream  *stream,
   if (!g_output_stream_set_pending (stream, error))
     return FALSE;
 
+  stream->priv->closing = TRUE;
+
   if (cancellable)
     g_cancellable_push_current (cancellable);
 
@@ -549,7 +548,8 @@ g_output_stream_close (GOutputStream  *stream,
   
   if (cancellable)
     g_cancellable_pop_current (cancellable);
-  
+
+  stream->priv->closing = FALSE;
   stream->priv->closed = TRUE;
   g_output_stream_clear_pending (stream);
   
@@ -576,6 +576,7 @@ async_ready_close_callback_wrapper (GObject      *source_object,
 {
   GOutputStream *stream = G_OUTPUT_STREAM (source_object);
 
+  stream->priv->closing = FALSE;
   stream->priv->closed = TRUE;
   g_output_stream_clear_pending (stream);
   if (stream->priv->outstanding_callback)
@@ -986,6 +987,7 @@ g_output_stream_close_async (GOutputStream       *stream,
     }
   
   class = G_OUTPUT_STREAM_GET_CLASS (stream);
+  stream->priv->closing = TRUE;
   stream->priv->outstanding_callback = callback;
   g_object_ref (stream);
   class->close_async (stream, io_priority, cancellable,
@@ -1043,6 +1045,27 @@ g_output_stream_is_closed (GOutputStream *stream)
   g_return_val_if_fail (G_IS_OUTPUT_STREAM (stream), TRUE);
   
   return stream->priv->closed;
+}
+
+/**
+ * g_output_stream_is_closing:
+ * @stream: a #GOutputStream.
+ *
+ * Checks if an output stream is being closed. This can be
+ * used inside e.g. a flush implementation to see if the
+ * flush (or other i/o operation) is called from within
+ * the closing operation.
+ *
+ * Returns: %TRUE if @stream is being closed. %FALSE otherwise.
+ *
+ * Since: 2.24
+ **/
+gboolean
+g_output_stream_is_closing (GOutputStream *stream)
+{
+  g_return_val_if_fail (G_IS_OUTPUT_STREAM (stream), TRUE);
+
+  return stream->priv->closing;
 }
 
 /**
@@ -1308,13 +1331,16 @@ close_async_thread (GSimpleAsyncResult *res,
      cancellation, since we want to close things anyway, although
      possibly in a quick-n-dirty way. At least we never want to leak
      open handles */
-  
+
   class = G_OUTPUT_STREAM_GET_CLASS (object);
-  result = class->close_fn (G_OUTPUT_STREAM (object), cancellable, &error);
-  if (!result)
+  if (class->close_fn)
     {
-      g_simple_async_result_set_from_error (res, error);
-      g_error_free (error);
+      result = class->close_fn (G_OUTPUT_STREAM (object), cancellable, &error);
+      if (!result)
+	{
+	  g_simple_async_result_set_from_error (res, error);
+	  g_error_free (error);
+	}
     }
 }
 

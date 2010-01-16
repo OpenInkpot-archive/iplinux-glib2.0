@@ -54,9 +54,6 @@
 
 #include "galias.h"
 
-static gint create_temp_file (gchar *tmpl, 
-			      int    permissions);
-
 /**
  * g_mkdir_with_parents:
  * @pathname: a pathname in the GLib file name encoding
@@ -207,19 +204,26 @@ g_file_test (const gchar *filename,
     return TRUE;
       
   if (test & G_FILE_TEST_IS_REGULAR)
-    return (attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE)) == 0;
+    {
+      if ((attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE)) == 0)
+	return TRUE;
+    }
 
   if (test & G_FILE_TEST_IS_DIR)
-    return (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    {
+      if ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+	return TRUE;
+    }
 
-  if (test & G_FILE_TEST_IS_EXECUTABLE)
+  /* "while" so that we can exit this "loop" with a simple "break" */
+  while (test & G_FILE_TEST_IS_EXECUTABLE)
     {
       const gchar *lastdot = strrchr (filename, '.');
       const gchar *pathext = NULL, *p;
       int extlen;
 
       if (lastdot == NULL)
-	return FALSE;
+        break;
 
       if (_stricmp (lastdot, ".exe") == 0 ||
 	  _stricmp (lastdot, ".cmd") == 0 ||
@@ -231,7 +235,7 @@ g_file_test (const gchar *filename,
 
       pathext = g_getenv ("PATHEXT");
       if (pathext == NULL)
-	return FALSE;
+        break;
 
       pathext = g_utf8_casefold (pathext, -1);
 
@@ -259,7 +263,7 @@ g_file_test (const gchar *filename,
 
       g_free ((gchar *) pathext);
       g_free ((gchar *) lastdot);
-      return FALSE;
+      break;
     }
 
   return FALSE;
@@ -868,7 +872,7 @@ rename_file (const char  *old_name,
 static gchar *
 write_to_temp_file (const gchar  *contents,
 		    gssize        length,
-		    const gchar  *template,
+		    const gchar  *dest_file,
 		    GError      **err)
 {
   gchar *tmp_name;
@@ -880,10 +884,10 @@ write_to_temp_file (const gchar  *contents,
 
   retval = NULL;
   
-  tmp_name = g_strdup_printf ("%s.XXXXXX", template);
+  tmp_name = g_strdup_printf ("%s.XXXXXX", dest_file);
 
   errno = 0;
-  fd = create_temp_file (tmp_name, 0666);
+  fd = g_mkstemp_full (tmp_name, O_RDWR | O_BINARY, 0666);
   save_errno = errno;
 
   display_name = g_filename_display_name (tmp_name);
@@ -942,11 +946,59 @@ write_to_temp_file (const gchar  *contents,
 	  goto out;
 	}
     }
-   
+
+  errno = 0;
+  if (fflush (file) != 0)
+    { 
+      save_errno = errno;
+      
+      g_set_error (err,
+		   G_FILE_ERROR,
+		   g_file_error_from_errno (save_errno),
+		   _("Failed to write file '%s': fflush() failed: %s"),
+		   display_name, 
+		   g_strerror (save_errno));
+
+      g_unlink (tmp_name);
+      
+      goto out;
+    }
+  
+#ifdef HAVE_FSYNC
+  {
+    struct stat statbuf;
+
+    errno = 0;
+    /* If the final destination exists and is > 0 bytes, we want to sync the
+     * newly written file to ensure the data is on disk when we rename over
+     * the destination. Otherwise if we get a system crash we can lose both
+     * the new and the old file on some filesystems. (I.E. those that don't
+     * guarantee the data is written to the disk before the metadata.)
+     */
+    if (g_lstat (dest_file, &statbuf) == 0 &&
+	statbuf.st_size > 0 &&
+	fsync (fileno (file)) != 0)
+      {
+	save_errno = errno;
+
+	g_set_error (err,
+		     G_FILE_ERROR,
+		     g_file_error_from_errno (save_errno),
+		     _("Failed to write file '%s': fsync() failed: %s"),
+		     display_name,
+		     g_strerror (save_errno));
+
+	g_unlink (tmp_name);
+
+	goto out;
+      }
+  }
+#endif
+  
   errno = 0;
   if (fclose (file) == EOF)
     { 
-      save_errno = 0;
+      save_errno = errno;
       
       g_set_error (err,
 		   G_FILE_ERROR,
@@ -1096,13 +1148,39 @@ g_file_set_contents (const gchar  *filename,
   return retval;
 }
 
+/**
+ * g_mkstemp_full:
+ * @tmpl: template filename
+ * @flags: flags to pass to an open() call in addition to O_EXCL and
+ *         O_CREAT, which are passed automatically
+ * @mode: permissios to create the temporary file with
+ *
+ * Opens a temporary file. See the mkstemp() documentation
+ * on most UNIX-like systems.
+ *
+ * The parameter is a string that should follow the rules for
+ * mkstemp() templates, i.e. contain the string "XXXXXX".
+ * g_mkstemp_full() is slightly more flexible than mkstemp()
+ * in that the sequence does not have to occur at the very end of the
+ * template and you can pass a @mode and additional @flags. The X
+ * string will be modified to form the name of a file that didn't exist.
+ * The string should be in the GLib file name encoding. Most importantly,
+ * on Windows it should be in UTF-8.
+ *
+ * Return value: A file handle (as from open()) to the file
+ *     opened for reading and writing. The file handle should be
+ *     closed with close(). In case of errors, -1 is returned.
+ *
+ * Since: 2.22
+ */
 /*
- * create_temp_file based on the mkstemp implementation from the GNU C library.
+ * g_mkstemp_full based on the mkstemp implementation from the GNU C library.
  * Copyright (C) 1991,92,93,94,95,96,97,98,99 Free Software Foundation, Inc.
  */
-static gint
-create_temp_file (gchar *tmpl, 
-		  int    permissions)
+gint
+g_mkstemp_full (gchar *tmpl, 
+                int    flags,
+		int    mode)
 {
   char *XXXXXX;
   int count, fd;
@@ -1112,6 +1190,9 @@ create_temp_file (gchar *tmpl,
   glong value;
   GTimeVal tv;
   static int counter = 0;
+
+  g_return_val_if_fail (tmpl != NULL, -1);
+
 
   /* find the last occurrence of "XXXXXX" */
   XXXXXX = g_strrstr (tmpl, "XXXXXX");
@@ -1144,7 +1225,7 @@ create_temp_file (gchar *tmpl,
       XXXXXX[5] = letters[v % NLETTERS];
 
       /* tmpl is in UTF-8 on Windows, thus use g_open() */
-      fd = g_open (tmpl, O_RDWR | O_CREAT | O_EXCL | O_BINARY, permissions);
+      fd = g_open (tmpl, flags | O_CREAT | O_EXCL, mode);
 
       if (fd >= 0)
 	return fd;
@@ -1184,7 +1265,7 @@ create_temp_file (gchar *tmpl,
 gint
 g_mkstemp (gchar *tmpl)
 {
-  return create_temp_file (tmpl, 0600);
+  return g_mkstemp_full (tmpl, O_RDWR | O_BINARY, 0600);
 }
 
 /**
@@ -1344,8 +1425,7 @@ g_build_path_va (const gchar  *separator,
 
       if (separator_len)
 	{
-	  while (start &&
-		 strncmp (start, separator, separator_len) == 0)
+	  while (strncmp (start, separator, separator_len) == 0)
 	    start += separator_len;
       	}
 
@@ -1662,9 +1742,12 @@ g_build_filename (const gchar *first_element,
   return str;
 }
 
-#define KILOBYTE_FACTOR 1024.0
-#define MEGABYTE_FACTOR (1024.0 * 1024.0)
-#define GIGABYTE_FACTOR (1024.0 * 1024.0 * 1024.0)
+#define KILOBYTE_FACTOR (G_GOFFSET_CONSTANT (1024))
+#define MEGABYTE_FACTOR (KILOBYTE_FACTOR * KILOBYTE_FACTOR)
+#define GIGABYTE_FACTOR (MEGABYTE_FACTOR * KILOBYTE_FACTOR)
+#define TERABYTE_FACTOR (GIGABYTE_FACTOR * KILOBYTE_FACTOR)
+#define PETABYTE_FACTOR (TERABYTE_FACTOR * KILOBYTE_FACTOR)
+#define EXABYTE_FACTOR  (PETABYTE_FACTOR * KILOBYTE_FACTOR)
 
 /**
  * g_format_size_for_display:
@@ -1695,19 +1778,34 @@ g_format_size_for_display (goffset size)
       
       if (size < (goffset) MEGABYTE_FACTOR)
 	{
-	  displayed_size = (gdouble) size / KILOBYTE_FACTOR;
+	  displayed_size = (gdouble) size / (gdouble) KILOBYTE_FACTOR;
 	  return g_strdup_printf (_("%.1f KB"), displayed_size);
 	}
       else if (size < (goffset) GIGABYTE_FACTOR)
 	{
-	  displayed_size = (gdouble) size / MEGABYTE_FACTOR;
+	  displayed_size = (gdouble) size / (gdouble) MEGABYTE_FACTOR;
 	  return g_strdup_printf (_("%.1f MB"), displayed_size);
 	}
-      else
+      else if (size < (goffset) TERABYTE_FACTOR)
 	{
-	  displayed_size = (gdouble) size / GIGABYTE_FACTOR;
+	  displayed_size = (gdouble) size / (gdouble) GIGABYTE_FACTOR;
 	  return g_strdup_printf (_("%.1f GB"), displayed_size);
 	}
+      else if (size < (goffset) PETABYTE_FACTOR)
+	{
+	  displayed_size = (gdouble) size / (gdouble) TERABYTE_FACTOR;
+	  return g_strdup_printf (_("%.1f TB"), displayed_size);
+	}
+      else if (size < (goffset) EXABYTE_FACTOR)
+	{
+	  displayed_size = (gdouble) size / (gdouble) PETABYTE_FACTOR;
+	  return g_strdup_printf (_("%.1f PB"), displayed_size);
+	}
+      else
+        {
+	  displayed_size = (gdouble) size / (gdouble) EXABYTE_FACTOR;
+	  return g_strdup_printf (_("%.1f EB"), displayed_size);
+        }
     }
 }
 

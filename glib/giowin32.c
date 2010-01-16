@@ -81,6 +81,10 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#ifdef _MSC_VER
+#define fstat(a,b) _fstat(a,b)
+#endif
+
 #include "gstdio.h"
 #include "glibintl.h"
 
@@ -1133,7 +1137,8 @@ g_io_win32_free (GIOChannel *channel)
 	  g_free (emsg);
 	}
 
-  if (win32_channel->type == G_IO_WIN32_SOCKET)
+  if (win32_channel->type == G_IO_WIN32_SOCKET &&
+      win32_channel->fd != -1)
     if (WSAEventSelect (win32_channel->fd, NULL, 0) == SOCKET_ERROR)
       if (win32_channel->debug)
 	{

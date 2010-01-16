@@ -1,5 +1,5 @@
 include $(top_srcdir)/Makefile.decl
-NULL = 
+NULL =
 
 # The name of the module.
 DOC_MODULE=gio
@@ -18,13 +18,19 @@ CFILE_GLOB=$(top_srcdir)/gio/*.c
 
 # Headers to ignore
 IGNORE_HFILES=				\
+	asyncns.h			\
 	fam-helper.h			\
+	fen-data.h			\
+	fen-helper.h			\
+	fen-kernel.h			\
+	fen-node.h			\
 	gasynchelper.h			\
 	gcontenttypeprivate.h		\
 	gdummyfile.h			\
 	gfamdirectorymonitor.h		\
 	gfamfilemonitor.h		\
 	gfileattribute-priv.h		\
+	gfileinfo-priv.h		\
 	ginotifydirectorymonitor.h	\
 	ginotifyfilemonitor.h		\
 	gio-marshal.h			\
@@ -42,12 +48,16 @@ IGNORE_HFILES=				\
 	glocalfileoutputstream.h	\
 	glocalvfs.h			\
 	gnativevolumemonitor.h		\
+	gnetworkingprivate.h		\
 	gpollfilemonitor.h		\
+	gthreadedresolver.h		\
 	gunionvolumemonitor.h		\
 	gunixdrive.h			\
+	gunixresolver.h			\
 	gunixvolume.h			\
 	gvolumeprivate.h		\
 	gwin32appinfo.h			\
+	gwin32resolver.h		\
 	inotify-diag.h			\
 	inotify-helper.h		\
 	inotify-kernel.h		\
@@ -57,24 +67,28 @@ IGNORE_HFILES=				\
 	local_inotify.h			\
 	local_inotify_syscalls.h	\
 	xdgmime.h			\
-	xdgmimealias.h		   	\
-	xdgmimecache.h		   	\
-	xdgmimeglob.h		   	\
-	xdgmimeint.h		   	\
-	xdgmimemagic.h		   	\
-	xdgmimeparent.h		   	\
+	xdgmimealias.h			\
+	xdgmimecache.h			\
+	xdgmimeglob.h			\
+	xdgmimeint.h			\
+	xdgmimemagic.h			\
+	xdgmimeparent.h			\
+	xdgmimeicon.h			\
+	winhttp.h			\
 	$(NULL)
 
 # CFLAGS and LDFLAGS for compiling scan program. Only needed
 # if $(DOC_MODULE).types is non-empty.
 INCLUDES = \
-	-I$(srcdir) 			\
-	-I$(top_srcdir) 		\
-	-I$(top_srcdir)/glib 		\
+	-I$(srcdir)			\
+	-I$(top_srcdir)			\
+	-I$(top_srcdir)/glib		\
 	-I$(top_srcdir)/gobject		\
-	-I$(top_builddir) 		\
-	-I$(top_builddir)/glib 		\
+	-I$(top_srcdir)/gio		\
+	-I$(top_builddir)		\
+	-I$(top_builddir)/glib		\
 	-I$(top_builddir)/gobject	\
+	-I$(top_builddir)/gio		\
 	$(GLIB_DEBUG_FLAGS)
 
 GTKDOC_LIBS = \
@@ -85,13 +99,14 @@ GTKDOC_LIBS = \
 	$(NULL)
 
 # Extra options to supply to gtkdoc-mkdb
-MKDB_OPTIONS = --output-format=xml --sgml-mode --name-space=g
+MKDB_OPTIONS = --output-format=xml --sgml-mode --name-space=g \
+	--ignore-files=libasyncns
 
 # Images to copy into HTML directory
 HTML_IMAGES =			\
 	gvfs-overview.png
 
-content_files = 		\
+content_files =			\
 	version.xml		\
 	overview.xml		\
 	migrating.xml
@@ -100,11 +115,11 @@ expand_content_files =		\
 	overview.xml		\
 	migrating.xml
 
-extra_files = 			\
+extra_files =			\
 	version.xml.in		\
 	gvfs-overview.odg
 
 include $(top_srcdir)/gtk-doc.make
 
-EXTRA_DIST +=				\
+EXTRA_DIST +=			\
 	version.xml.in

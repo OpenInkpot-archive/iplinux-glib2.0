@@ -14,7 +14,10 @@ DIE=0
 
 have_libtool=false
 if libtoolize --version < /dev/null > /dev/null 2>&1 ; then
-	libtool_version=`libtoolize --version | sed 's/^[^0-9]*\([0-9.][0-9.]*\).*/\1/'`
+	libtool_version=`libtoolize --version |
+			 head -1 |
+			 sed -e 's/^\(.*\)([^)]*)\(.*\)$/\1\2/g' \
+			     -e 's/^[^0-9]*\([0-9.][0-9.]*\).*/\1/'`
 	case $libtool_version in
 	    1.4*|1.5*|2.2*)
 		have_libtool=true
@@ -45,18 +48,22 @@ fi
 	DIE=1
 }
 
-if automake-1.10 --version < /dev/null > /dev/null 2>&1 ; then
+if automake-1.11 --version < /dev/null > /dev/null 2>&1 ; then
+    AUTOMAKE=automake-1.11
+    ACLOCAL=aclocal-1.11
+else if automake-1.10 --version < /dev/null > /dev/null 2>&1 ; then
     AUTOMAKE=automake-1.10
     ACLOCAL=aclocal-1.10
 else if automake-1.9 --version < /dev/null > /dev/null 2>&1 ; then
     AUTOMAKE=automake-1.9
     ACLOCAL=aclocal-1.9
-else 
+else
 	echo
-	echo "You must have automake 1.9.x or 1.10.x installed to compile $PROJECT."
+	echo "You must have automake 1.9.x, 1.10.x or 1.11.x installed to compile $PROJECT."
 	echo "Install the appropriate package for your distribution,"
 	echo "or get the source tarball at http://ftp.gnu.org/gnu/automake/"
 	DIE=1
+fi
 fi
 fi
 
@@ -82,23 +89,6 @@ rm -rf autom4te.cache
 # up rules. to get automake to work, simply touch these here, they will be
 # regenerated from their corresponding *.in files by ./configure anyway.
 touch README INSTALL
-
-if [ ! -d build ]; then
-  if [ -x "`which svn`" ]; then
-    echo
-    echo "=============================================================="
-    echo "  your checkout doesn't contain build/."
-    echo "      fetching it from http://svn.gnome.org/svn/build/trunk/"
-    echo "=============================================================="
-    echo
-
-    svn checkout http://svn.gnome.org/svn/build/trunk/ build
-  else
-    echo
-    echo 'warning: build/ directory is missing and no "svn" to fetch it!'
-    echo
-  fi
-fi
 
 $ACLOCAL $ACLOCAL_FLAGS || exit $?
 

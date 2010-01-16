@@ -202,6 +202,17 @@ A test to perform on a file using g_file_test().
 @Returns: 
 
 
+<!-- ##### FUNCTION g_mkstemp_full ##### -->
+<para>
+
+</para>
+
+@tmpl: 
+@flags: 
+@mode: 
+@Returns: 
+
+
 <!-- ##### FUNCTION g_file_open_tmp ##### -->
 <para>
 
@@ -292,6 +303,23 @@ not be accessed directly.
 @writable: 
 @error: 
 @Returns: 
+
+
+<!-- ##### FUNCTION g_mapped_file_ref ##### -->
+<para>
+
+</para>
+
+@file: 
+@Returns: 
+
+
+<!-- ##### FUNCTION g_mapped_file_unref ##### -->
+<para>
+
+</para>
+
+@file: 
 
 
 <!-- ##### FUNCTION g_mapped_file_free ##### -->

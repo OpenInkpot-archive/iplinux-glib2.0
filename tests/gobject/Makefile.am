@@ -59,9 +59,13 @@ test_programs =					\
 	ifaceinherit				\
 	ifaceproperties				\
 	override				\
+	performance				\
+	performance-threaded			\
 	singleton				\
 	references
 
+performance_LDADD = $(libgobject) $(libgthread)
+performance_threaded_LDADD = $(libgobject) $(libgthread)
 check_PROGRAMS = $(test_programs)
 
 TESTS = $(test_programs)

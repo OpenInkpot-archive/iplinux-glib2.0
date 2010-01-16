@@ -105,12 +105,6 @@ g_dummy_file_init (GDummyFile *dummy)
 {
 }
 
-/**
- * g_dummy_file_new:
- * @uri: Universal Resource Identifier for the dummy file object.
- * 
- * Returns: a new #GFile. 
- **/
 GFile *
 _g_dummy_file_new (const char *uri)
 {
@@ -425,6 +419,8 @@ g_dummy_file_file_iface_init (GFileIface *iface)
   iface->get_relative_path = g_dummy_file_get_relative_path;
   iface->resolve_relative_path = g_dummy_file_resolve_relative_path;
   iface->get_child_for_display_name = g_dummy_file_get_child_for_display_name;
+
+  iface->supports_thread_contexts = TRUE;
 }
 
 /* Uri handling helper functions: */
@@ -688,16 +684,13 @@ is_valid (char c, const char *reserved_chars_allowed)
 }
 
 static void
-g_string_append_encoded (GString    *string, 
+g_string_append_encoded (GString    *string,
                          const char *encoded,
 			 const char *reserved_chars_allowed)
 {
   unsigned char c;
-  const char *end;
   static const gchar hex[16] = "0123456789ABCDEF";
 
-  end = encoded + strlen (encoded);
-  
   while ((c = *encoded) != 0)
     {
       if (is_valid (c, reserved_chars_allowed))

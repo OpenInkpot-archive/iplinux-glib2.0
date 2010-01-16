@@ -1,3 +1,107 @@
+=== ChangeLog discontinued ===
+
+	With the move to git, GLib is switching from a ChangeLog file
+	to relying on commit messages to provide change history. Please
+	see README.commits for guidance on the expected message format.
+
+2009-03-30  Manoj Kumar Giri  <mgiri@redhat.com>
+
+	* or.po: Updated Oriya Translation.
+
+2009-03-26  Gintautas Miliauskas  <gintautas@miliauskas.lt>
+
+	* lt.po: Updated Lithuanian translation.
+
+2009-03-26  Shankar Prasad  <svenkate@redhat.com>
+
+        * kn.po: Updated Kannada translations.
+
+2009-03-21  Nickolay V. Shmyrev <nshmyrev@yandex.ru>
+
+	* ru.po: Updated Russian translation.
+
+2009-03-18  Kostas Papadimas <pkst@gnome.org>
+
+	* el.po: Updated Greek Translation by Fotis Tsamis.
+
+2009-03-18  Djihed Afifi <djihed@gmail.com>
+
+	* ar.po: Updated Arabic translation by Anas Afif Emad.
+
+2009-03-18  Amitakhya Phukan <amitakhya@svn.gnome.org>
+
+	* as.po: Updated Assamese translations.
+
+2009-03-18  Gabor Kelemen  <kelemeng@gnome.hu>
+
+	* hu.po: Translation updated.
+	
+2009-03-17  Tomasz Dominikowski  <tdominikowski@aviary.pl>
+
+	* pl.po: Updated Polish translation
+
+2009-03-17  Inaki Larranaga Murgoitio  <dooteo@euskalgnu.org>
+
+	* eu.po: Updated Basque translation.
+
+2009-03-17  Ani Peter <apeter@redhat.com>
+
+	* ml.po: Updated Malayalam Translations
+
+2009-03-17  Ignacio Casal Quinteiro  <icq@gnome.org>
+
+	 * gl.po: Updated Galician translation
+
+2009-03-17  Gil Forcada  <gforcada@gnome.org>
+
+	* ca.po: Updated Catalan translation.
+
+2009-03-17  Takeshi AIHANA <takeshi.aihana@gmail.com>
+
+	* ja.po: Update Japanese translation.
+
+2009-03-17  Hendrik Richter  <hendrikr@gnome.org>
+
+	* de.po: Updated German translation.
+
+2009-03-17  Alexander Shopov  <ash@contact.bg>
+
+	* bg.po: Updated Bulgarian translation by
+	Alexander Shopov <ash@contact.bg>
+
+2009-03-17  Claude Paroz  <claude@2xlibre.net>
+
+	* fr.po: Updated French translation.
+
+2009-03-17  Kjartan Maraas  <kmaraas@gnome.org>
+
+	* nb.po: Updated Norwegian bokmål translation.
+
+2009-03-16  Jorge Gonzalez  <jorgegonz@svn.gnome.org>
+
+	* es.po: Updated Spanish translation.
+
+2009-03-16  Milo Casagrande  <milo@ubuntu.com>
+
+	* it.po: Updated Italian translation.
+
+2009-03-16 Og Maciel <ogmaciel@gnome.org>
+
+	* pt_BR.po: Updated Brazilian Portuguese translation by
+	Vladimir Melo.
+
+2009-03-16  Daniel Nylander <po@danielnylander.se>
+
+	* sv.po: Updated Swedish translation.
+
+2009-03-16  Philip Withnall  <philip@tecnocode.co.uk>
+
+	* en_GB.po: Updated British English translation.
+
+2009-03-14  Kostas Papadimas <pkst@gnome.org>
+
+	* el.po: Updated Greek Translation by Fotis Tsamis.
+
 2009-03-16  Alexander Shopov  <ash@contact.bg>
 
 	* bg.po: Updated Bulgarian translation by

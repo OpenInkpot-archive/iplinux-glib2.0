@@ -1,3 +1,496 @@
+Overview of Changes from GLib 2.23.0 to GLib 2.23.1
+===================================================
+
+* GObject performance work has landed:
+ - Construction of simple objects is much faster
+ - Interface lookup is lock-free and constant-time now
+ - Reduced locking overhead when dealing with types
+
+* GType now has a G_DEFINE_INTERFACE convenience macro
+
+* GIO gained GUtf8InputStream, an input stream that
+  performs utf-8 validation
+
+* GLib now has byte-swap macros for gsize and gssize
+
+* Bugs fixed:
+557151 Determining the newly_constructed boolean in gobject.c...
+557100 Performance improvements for GObjectClasses that don't...
+501166 Warning message says IA__g_type_init instead of g_type_init
+585375 Performance and Contention problems with g_type_class_ref...
+587892 Race in GType when instantiating the same class for the...
+603270 Input Stream validating utf8
+603476 gioenums.h:62: error: comma at end of enumerator list
+603540 g_time_val_from_iso8601 uses uninitialised variable
+603982 Stack overflow when reading file async with filter
+604645 G_DEFINE_INTERFACE_* documentation is not generated
+604875 Use of sa_len conflicts with system header
+320482 provide G_DEFINE_TYPE like macros for interfaces
+
+* Updated translations:
+ Estonian
+ Hebrew
+ Norwegian bokmål
+ Vietnamese
+ Welsh
+
+
+Overview of Changes from GLib 2.22.x to GLib 2.23.0
+===================================================
+
+* GIO:
+ - GConverter: a generic interface for stateful conversions of data,
+   suitable for charset conversion, compression, decompression, regexp
+   replacement. Concrete implementations are GCharsetConverter,
+   GZlibCompressor and GZlibDecompressor. GConverterInputStream,
+   GConverterOutputStream are stream implementations that convert data
+   while loading or saving it.
+ - GMounts can now have a 'default location': a path that reflects
+   the main entry point for the user (e.g. the home directory).
+ - As a consequence of the compression support, GIO depends on zlib now.
+
+* GObject:
+ - G_IMPLEMENT_INTERFACE_DYNAMIC: a convenience macro for adding
+   interfaces to dynamic types.
+
+* GModule:
+ - The -pthread flag has been added to all gmodule .pc files, because
+   it is not generally permissible to load modules that are linked
+   against libpthread if the program has not been compiled with threading
+   support.
+
+* Bugs fixed:
+ 601637 GUnixFDMessage should contain a GUnixFDList
+ 585566 GSocketListener API issues
+ 572252 Bug in g_file_test() function.
+ 600550 g_app_info_create_from_commandline doesn't treat arguments properly
+ 541236 not detecting exact content type
+ 350200 [PATCH] GTypeModule derived class unref does not unload plugin
+ 589631 Please enclose literal values with double quotes
+ 577711 cross compile check for g++ broken
+ 600620 Support X-GNOME-FullName in GAppInfo
+ 598899 GWin32DirectoryMonitor is broken
+ 593809 Nautilus does not restore the position of the icons on the desktop...
+ 563627 g_get_prgname() threadsafety
+ 600141 Add -pthread to gmodule pkg-config
+ 593856 file and directory monitors don't work when glib is compiled...
+ 324930 Nautilus should disallow copying of symlink to FAT drive early
+ 587300 Deadlock when calling g_cancellable_disconnect in a...
+ 595138 GFile not robust with invalid input
+ 591216 Warning building resolver.o
+ 590016 Does not compile under MinGW32 + Wine
+ 591214 Warnings building gcancellable.o
+ 561998 Have specific entry points (paths) for mounts...
+ 508157 Add G_IMPLEMENT_INTERFACE_DYNAMIC
+ 535159 g_file_has_parent
+
+* Updated translations:
+ Brazilian Portuguese
+ Catalan
+ Estonian
+ Galician
+ Norwegian bokmål
+ Shavian
+ Slovenian
+ Spanish
+ Swedish
+
+
+Overview of Changes from GLib 2.22.1 to GLib 2.22.2
+===================================================
+
+* GIO:
+ - Support case-sensitive globs in the shared mime database,
+   including support for the newer cache format that allows these.
+   Case-sensitive globs have been introduced in shared-mime-info
+   version 0.70
+
+* GObject:
+ - Speed up creation of simple objects
+
+* Bugs fixed:
+ 597194 Typo in _G_TYPE_CVH macro
+
+* Updated translations:
+ Russian
+
+
+Overview of Changes from GLib 2.22.0 to GLib 2.22.1
+===================================================
+
+* Bugs fixed:
+ 596064 Test file marked for translation
+ 595972 possibly invalid search in mime_info_cache_dir_add_...
+ 596561 C99 style of declaration of variable in gmessages.c
+ 596314 g_utf16_to_utf8 returns an invalid UTF8 string
+ 596748 g_async_result_get_source_object returns a new ref
+ 593809 Nautilus does not restore the position of the icons...
+ 593775 uses inotify_init1 unconditionally
+
+* Updated translations:
+ Bengali
+ Hebrew
+
+
+Overview of Changes from GLib 2.21.6 to GLib 2.22.0
+===================================================
+
+* Add gdb python macros to make gobject debugging more pleasant
+
+* Bugs fixed:
+ 579050 Allow making selected critical and warning messages non-fatal
+ 594759 g_socket_send_message fails due to invalid sendmsg params
+ 593941 GNetworkAddress skipping addresses when enumerating
+ 594597 Fix build with srcdir != builddir
+ 595619 Include gdb pretty printers
+
+* Changes that might affect bindings:
+ - The error parameter of g_simple_async_result_set_from_error has been
+   made const.
+
+* Updated translations:
+ Assamese
+ Bengali India
+ British English
+ Bulgarian
+ Catalan
+ Czech
+ Danish
+ Finnish
+ Galician
+ Greek
+ Gujarati
+ Hindi
+ Japanese
+ Kannada
+ Malayalam
+ Marathi
+ Norwegian bokmål
+ Oriya
+ Polish
+ Punjabi
+ Romanian
+ Serbian
+ Simplified Chinese
+ Slovenian
+ Spanish
+ Tamil
+ Telugu
+ Thai
+ Traditional Chinese
+ Ukrainian
+ Vietnamese
+
+
+Overview of Changes from GLib 2.21.5 to GLib 2.21.6
+===================================================
+
+* Minor API additions:
+  g_mkstemp_full is a variant of g_mkstemp that allows to specify flags
+  and permissions
+
+* Bugs fixed:
+ 593232 g_rand_new: read no more than requested from /dev/urandom
+ 591995 use saved errno
+ 589491 g_time_val_from_iso8601 doesn't handle some cases
+ 593406 Permissions set to 777 after copying via Nautilus
+ 594034 Add g_mkstemp_full()
+
+* Updated translations:
+ Assamese
+ Basque
+ Brazilian Portuguese
+ Czech
+ Estonian
+ French
+ German
+ Hungarian
+ Italian
+ Kannada
+ Malayalam
+ Marathi
+ Norwegian bokmål
+ Oriya
+ Portuguese
+ Swedish
+ Tamil
+ Turkish
+
+
+Overview of Changes from GLib 2.21.4 to GLib 2.21.5
+===================================================
+
+* A performance problem with trashing of many files has been fixed
+
+* GResolver now invalidates the libc resolv.conf cache as needed
+
+* Minor api additions:
+ - g_cancellable_make_pollfd returns a boolean now. And there is a
+   new function g_cancellable_release_fd that can be used to released
+   the resources used by a GCancellable.
+
+* Bugs fixed:
+ 589988 Compilation error on Solaris 9 (missing stdint.h)
+ 588901 gtcpconnection.c won't compile
+ 584246 GResolver needs to call res_init() when network state changes
+ 591714 Figure out failure handling for g_cancellable_make_pollfd()
+ 591532 redundent '/' returned from g_file_resolve_relative_path
+ 591378 Use MSG_NOSIGNAL in GSocket if it's available
+ 589649 API documentation migration for Base64 Encoding
+ 591840 configure fails with autoconf 2.64
+
+* Updated translations:
+ Basque
+ Brazilian Portuguese
+ Bulgarian
+ Danish
+ Estonian
+ Finnish
+ Galician
+ Gujarati
+ Hndi
+ Irish
+ Japanese
+ Korean
+ Norwegian bokmål
+ Polish
+ Portuguese
+ Punjabi
+ Spanish
+ Swedish
+ Telugu
+ Traditional Chinese
+ Thai
+
+
+Overview of Changes from GLib 2.21.3 to GLib 2.21.4
+===================================================
+
+* GTree is now refcounted
+
+* Bugs fixed:
+ 587938 Undocumented limitation for g_str_equal
+ 587773 refcounts for GTree
+
+* Updated translations:
+ French
+ Hebrew
+ Norwegian bokmål
+ Spanish
+ Swedish
+ Traditional Chinese
+ Ukrainian
+
+
+Overview of Changes from GLib 2.21.2 to GLib 2.21.3
+===================================================
+
+* GMappedFile is refcounted now
+
+* Mainloop: It is now possible to set per-thread default contexts,
+  with g_main_context_push_thread_default.
+
+* glib-mkenums supports a @basename@ substitution, in addition
+  to @filename@.
+
+* GIO:
+ - Vfs implementations can support storing of per-file metadata.
+ - GCancellable can now be subclassed.
+ - Unmount and eject methods now optionally allow interaction, via
+   variants that take a GMountOperation object.
+
+* Bugs fixed:
+ 556706 Inconsistent help arguments -h, -?
+ 579449 FileChoosers no longer work if an idle handler is active
+ 579933 mainloop FD_CLOEXEC has a race condition
+ 579984 alternate GMainContext support
+ 585937 gio/gsocket.c (glib 2.21.2) does not compile (Windows/mingw)
+ 586675 Runtime library location
+ 586797 Add GCancellables to GSocket ops
+ 586868 g_filename_complete_get_completions doesn't always return...
+ 587415 g_resolver_lookup_by_name_finish returns a freed list
+ 587434 regression tests fail, at least on x86_64
+ 586928 Avoid g++ warning in g_error()
+
+* Updated translations:
+ Estonian
+ Hebrew
+
+
+Overview of Changes from GLib 2.21.1 to GLib 2.21.2
+===================================================
+
+* GIO:
+  - g_socket_speaks_ipv4 is a new function to check if a socket can
+    speak IPv4.
+  - g_socket_listener_add_address gained a new effective_address out
+    parameter.
+  - GIO now returns special icons for XDG user directories, by the
+    name folder-music, folder-documents, etc.
+  - GIO gained support for starting/stopping of drives, which can be used
+    in connection with external hard disk enclosures, disk arrays, iSCSI
+    devices, etc. See g_file_start/stop_mountable.
+
+* GLib:
+ - g_reload_user_special_dirs_cache is a new function to force GLib to
+   reload the XDG user directory mapping from disk.
+
+* Bug fixes:
+ 584574 glib compile failure on Mac OS X with gunixresolver.c and...
+ 585566	GSocketListener API issues
+ 584255	Incorrect freeing of thread pool in GThreadedSocketService
+ 585088	g_string_chunk_insert_len stops at nul bytes
+ 585360	Monitor fontconfig configuration files using gio causes m...
+ 580103	Terminal starts on Display :0.0 when started on :0.1 in D...
+ 580301	network: a few issues on old darwin
+ 583398	SRV weight sorting is incorrect
+ 584176	build fixes on FreeBSD
+ 585189	g_cancellable_reset() must be called in same thread as g_...
+ 585280	compilation dies on gio/gsocket.c, needs sys/uio.h to con...
+ 585281	gio/gunixfdmessage.c needs sys/types.h for platforms that...
+ 585478	don't leak the inotify fd
+ 585575	g_socket_listener_add_inet_port() doesn't do the right thing
+ 585599	g_socket_listener_add_socket() consumes the socket
+ 585676	GEmblem doesn't reference its 'icon' if that is set as a ...
+ 585717	"bytes" nautilus translation to french is not shown in th...
+ 541276	XDG directories should have their own icons
+ 585726	Grammatical error in GList documentation
+ 585520	Wrong warning option in documentation
+ 585673	GNOME Goal: Remove deprecated glib symbols
+ 585591	Starting/stopping drives
+
+* Updated translations:
+ Bengali India
+ Norwegian bokmål
+
+
+Overview of Changes from GLib 2.21.0 to GLib 2.21.1
+===================================================
+
+* GIO:
+ - Support for network IO has been added, including a low-level
+   socket API and a high-level API for network connections and
+   services.
+ - Support for read-write access with GIOStream and its subclasses.
+ - GMount gained a pre-unmount signal.
+
+* Bug fixes:
+ 576104Implement GMount::pre-unmount
+ 578769 implement GWinHttpFileInputStream::close_fn
+ 582856	gsocket.c doesn't compile on Solaris
+ 569375	g[u]intptr undocumented
+ 573246	[FIX] g_desktop_app_info_dup() can access NULL pointer
+ 575013	g_cancellable_push_current() does not allow NULL
+ 577884	live-g-file.c:461: error: format ‘%d’ expects type ...
+ 578499	g_output_stream_splice and stream closing with gnio strea...
+ 579558	Application employing gvfs crashes with only libgvfscommo...
+ 583001	SIGPIPE (grr!)
+ 583061	Please add convenience function to connect to machines by...
+ 583198	typo in error message
+ 583206	use g_set_error_literal where appropriate
+ 583229	void function g_async_initable_init_async returns value
+ 583324	locking problem in g_main_context_iterate()
+ 583408	void function g_socket_control_message_serialize returns ...
+ 578786	wrong and confusing error message
+ 583205	g_inet_address_to_bytes has no length outparam
+ 583196	mem leak in keyfile test
+ 583663	GSocketType enum ends with a comma
+ 569024	Make g_error_new_valist public
+ 569376	missing G_G[U]INTPTR_FORMAT
+ 580347 off-by-1 bug in GWinHttpFile
+
+* Updated translations:
+ Oriya
+ Spanish
+ Valencian-Catalan
+
+
+Overview of Changes from GLib 2.20.x to GLib 2.21.0
+===================================================
+
+* GIO:
+ - New helper functions g_cancellable_connect/disconnect to avoid
+   race conditions when connecting to the "cancelled" signal on
+   GCancellable.
+ - New types and methods for dealing with IPv4 and IPv6 addresses (and
+   UNIX domain socket addresses under UNIX). This does not include code
+   for actual socket I/O.
+ - GResolver provides asynchronous and cancellable APIs for resolving
+   hostnames, reverse lookup of IP addresses and resolving SRV records.
+
+* Glib now provides hash and comparison functions for int64 and double
+  types, suitable for use with GHashTable.
+
+* GArray, GPtrArray and GByteArray can be ref counted now, and have
+  boxed types.
+
+* Bugs fixed:
+ 572844 Helper for GCancellable::cancelled connect/disconnect
+ 578363 goption docs should be improved
+ 548466 async/cancellable DNS resolver
+ 579830 param spec strings should use P_()
+ 579862 requesting xattr::foo ends up calling getxattr(..., user...
+ 580453 Hash and equal functions for gint64 and gdouble
+ 580450 Reference counting and boxed types for arrays
+ 580194 gresolver doesn't build on Solaris
+ 580301 network: a few issues on old darwin
+ 580299 network: include sys/types.h before sys/socket.h to insur...
+ 572508 gmarkup speedup
+ 580546 g_strtoull() referenced in documentation...
+ 580656 g_key_file_set_string_list erroneously asserts list != NULL
+ 579272 leaks in g_simple_async_result_set_op_res_gpointer
+
+
+* Updated translations:
+ Catalan (ca)
+ Pashto (ps)
+ Spanish (es)
+
+
+Overview of Changes from GLib 2.20.0 to GLib 2.20.1
+===================================================
+
+* Bug fixes:
+ 575555 Use fsync() when replacing files to avoid data loss on
+ 575708 runaway inotify madness
+ 575270 GVolumeMonitor::mount-pre-unmount not being emitted
+ 577128 glib make check Failed to execute child process...
+ 573673 Always show "backup" directories
+ 578369 g_time_val_from_iso8601() parses timezones incorrectly
+ 578002 Fix a small typo in GFile docs
+ 578017 G_DEFINE_TYPE_EXTENDED docs
+
+* Updated translations:
+ Arabic
+ Assamese
+ Basque
+ Bularian
+ Brazilian Portuguese
+ British English
+ Catalan
+ Danish
+ French
+ Galician
+ German
+ Greek
+ Hungarian
+ Italian
+ Japanese
+ Kannada
+ Lithuanian
+ Malayalam
+ Norwegian bokmål
+ Oriya
+ Polish
+ Punjabi
+ Russian
+ Simplified Chinese
+ Slovenian
+ Spanish
+ Swedish
+ Tamil
+
+
 Overview of Changes from GLib 2.19.9 to GLib 2.20.0
 ===================================================
 

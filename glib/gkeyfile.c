@@ -39,6 +39,10 @@
 #ifdef G_OS_WIN32
 #include <io.h>
 
+#ifdef _MSC_VER
+#define fstat(a,b) _fstat(a,b)
+#endif
+
 #ifndef S_ISREG
 #define S_ISREG(mode) ((mode)&_S_IFREG)
 #endif
@@ -409,7 +413,6 @@ g_key_file_load_from_fd (GKeyFile       *key_file,
     }
   key_file->flags = flags;
 
-  bytes_read = 0;
   do
     {
       bytes_read = read (fd, read_buf, 4096);
@@ -428,7 +431,7 @@ g_key_file_load_from_fd (GKeyFile       *key_file,
           return FALSE;
         }
 
-      g_key_file_parse_data (key_file, 
+      g_key_file_parse_data (key_file,
 			     read_buf, bytes_read,
 			     &key_file_error);
     }
@@ -1526,7 +1529,7 @@ g_key_file_get_string_list (GKeyFile     *key_file,
           g_set_error (error, G_KEY_FILE_ERROR,
                        G_KEY_FILE_ERROR_INVALID_VALUE,
                        _("Key file contains key '%s' "
-                         "which has value that cannot be interpreted."),
+                         "which has a value that cannot be interpreted."),
                        key);
           g_error_free (key_file_error);
         }
@@ -1559,7 +1562,7 @@ g_key_file_get_string_list (GKeyFile     *key_file,
  * @length: number of string values in @list
  *
  * Associates a list of string values for @key under @group_name.
- * If @key cannot be found then it is created.  
+ * If @key cannot be found then it is created.
  * If @group_name cannot be found then it is created.
  *
  * Since: 2.6
@@ -1575,7 +1578,7 @@ g_key_file_set_string_list (GKeyFile            *key_file,
   gsize i;
 
   g_return_if_fail (key_file != NULL);
-  g_return_if_fail (list != NULL);
+  g_return_if_fail (list != NULL || length == 0);
 
   value_list = g_string_sized_new (length * 128);
   for (i = 0; i < length && list[i] != NULL; i++)
@@ -1601,7 +1604,7 @@ g_key_file_set_string_list (GKeyFile            *key_file,
  * @locale: a locale identifier
  * @string: a string
  *
- * Associates a string value for @key and @locale under @group_name.  
+ * Associates a string value for @key and @locale under @group_name.
  * If the translation for @key cannot be found then it is created.
  *
  * Since: 2.6

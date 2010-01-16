@@ -22,7 +22,7 @@ m4_define(glib_configure_in)
 # set glib_binary_age _and_ glib_interface_age to 0.
 #
 m4_define([glib_major_version], [2])
-m4_define([glib_minor_version], [20])
+m4_define([glib_minor_version], [23])
 m4_define([glib_micro_version], [1])
 m4_define([glib_interface_age], [1])
 m4_define([glib_binary_age],
@@ -58,6 +58,10 @@ AM_INIT_AUTOMAKE([no-define])
 # Specify a configuration file
 AM_CONFIG_HEADER([config.h])
 
+# Support silent build rules, requires at least automake-1.11. Enable
+# by either passing --enable-silent-rules to configure or passing V=0
+# to make
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([no])])
 
 GLIB_MAJOR_VERSION=glib_major_version
 GLIB_MINOR_VERSION=glib_minor_version
@@ -245,12 +249,25 @@ else
   AC_MSG_RESULT([yes])
 fi
 
+dnl location to install runtime libraries, e.g. ../../lib to install
+dnl to /lib if libdir is /usr/lib
+AC_ARG_WITH(runtime-libdir,
+           [AC_HELP_STRING([--with-runtime-libdir=RELPATH],
+                           [Install runtime libraries relative to libdir])],
+           [],
+	   [with_runtime_libdir=""])
+GLIB_RUNTIME_LIBDIR="$with_runtime_libdir"
+ABS_GLIB_RUNTIME_LIBDIR="`readlink -f $libdir/$with_runtime_libdir`"
+AC_SUBST(GLIB_RUNTIME_LIBDIR)
+AC_SUBST(ABS_GLIB_RUNTIME_LIBDIR)
+AM_CONDITIONAL(HAVE_GLIB_RUNTIME_LIBDIR, [test "x$with_runtime_libdir" != "x"])
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
 
 dnl Check for a working C++ compiler, but do not bail out, if none is found.
-AC_CHECK_PROGS(CXX, [$CCC c++ g++ gcc CC cxx cc++ cl], [gcc])
+AC_CHECK_TOOLS(CXX, [$CCC c++ g++ gcc CC cxx cc++ cl], [gcc])
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
 AC_TRY_COMPILE(,[class a { int b; } c;], ,CXX=)
@@ -441,6 +458,17 @@ AC_MSG_RESULT($enable_iconv_cache)
 
 
 dnl
+dnl zlib support
+dnl
+found_zlib=no
+AC_CHECK_LIB(z, inflate, [AC_CHECK_HEADER(zlib.h, found_zlib=yes)])
+
+if test "x$found_zlib" = "xno" ; then
+   AC_MSG_ERROR([*** Working zlib library and headers not found ***])
+fi
+ZLIB_LIBS='-lz'
+AC_SUBST(ZLIB_LIBS)
+dnl
 dnl gettext support
 dnl
 
@@ -559,14 +587,8 @@ AC_HEADER_STDC
 # Checks for library functions.
 AC_FUNC_VPRINTF
 AC_FUNC_ALLOCA
-AC_CHECK_FUNCS(mmap)
-AC_CHECK_FUNCS(posix_memalign)
-AC_CHECK_FUNCS(memalign)
-AC_CHECK_FUNCS(valloc)
-
-AC_CHECK_FUNCS(atexit on_exit)
-
-AC_CHECK_FUNCS(timegm gmtime_r)
+AC_CHECK_FUNCS(mmap posix_memalign memalign valloc fsync pipe2)
+AC_CHECK_FUNCS(atexit on_exit timegm gmtime_r)
 
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
@@ -856,6 +878,7 @@ AC_CHECK_HEADERS([sys/time.h sys/times.h sys/wait.h unistd.h values.h])
 AC_CHECK_HEADERS([sys/select.h sys/types.h stdint.h sched.h malloc.h])
 AC_CHECK_HEADERS([sys/vfs.h sys/mount.h sys/vmount.h sys/statfs.h sys/statvfs.h])
 AC_CHECK_HEADERS([mntent.h sys/mnttab.h sys/vfstab.h sys/mntctl.h sys/sysctl.h fstab.h])
+AC_CHECK_HEADERS([sys/uio.h])
 
 # check for structure fields
 AC_CHECK_MEMBERS([struct stat.st_mtimensec, struct stat.st_mtim.tv_nsec, struct stat.st_atimensec, struct stat.st_atim.tv_nsec, struct stat.st_ctimensec, struct stat.st_ctim.tv_nsec])
@@ -942,7 +965,7 @@ AC_MSG_RESULT(unsigned $glib_size_type)
 
 # Check for some functions
 AC_CHECK_FUNCS(lstat strerror strsignal memmove vsnprintf stpcpy strcasecmp strncasecmp poll getcwd vasprintf setenv unsetenv getc_unlocked readlink symlink fdwalk)
-AC_CHECK_FUNCS(chown lchown fchmod fchown link statvfs statfs utimes getgrgid getpwuid)
+AC_CHECK_FUNCS(chown lchmod lchown fchmod fchown link statvfs statfs utimes getgrgid getpwuid)
 AC_CHECK_FUNCS(getmntent_r setmntent endmntent hasmntopt getmntinfo)
 # Check for high-resolution sleep functions
 AC_CHECK_FUNCS(nanosleep nsleep)
@@ -952,6 +975,70 @@ AC_CHECK_FUNCS(_NSGetEnviron)
 
 AC_FUNC_VSNPRINTF_C99
 AC_FUNC_PRINTF_UNIX98
+
+# Internet address families
+if test $glib_native_win32 = yes; then
+  glib_inet_includes=["
+#include <winsock2.h>
+  "]
+else
+  glib_inet_includes=["
+#include <sys/types.h>
+#include <sys/socket.h>
+  "]
+fi
+
+glib_failed=false
+GLIB_CHECK_VALUE(AF_INET, $glib_inet_includes, glib_failed=true)
+GLIB_CHECK_VALUE(AF_INET6, $glib_inet_includes, glib_failed=true)
+# winsock defines this even though it doesn't support it
+GLIB_CHECK_VALUE(AF_UNIX, $glib_inet_includes, glib_failed=true)
+if $glib_failed ; then
+  AC_MSG_ERROR([Could not determine values for AF_INET* constants])
+fi
+
+glib_failed=false
+GLIB_CHECK_VALUE(MSG_PEEK, $glib_inet_includes, glib_failed=true)
+GLIB_CHECK_VALUE(MSG_OOB, $glib_inet_includes, glib_failed=true)
+GLIB_CHECK_VALUE(MSG_DONTROUTE, $glib_inet_includes, glib_failed=true)
+if $glib_failed ; then
+  AC_MSG_ERROR([Could not determine values for MSG_* constants])
+fi
+
+AC_CHECK_FUNCS(getprotobyname_r endservent)
+AC_CHECK_HEADERS([netdb.h wspiapi.h])
+
+# For gio/libasyncns
+if test $glib_native_win32 = no; then
+  AC_CHECK_FUNCS(strndup setresuid setreuid)
+  AC_CHECK_HEADERS(sys/prctl.h arpa/nameser_compat.h)
+  AC_CHECK_FUNC(res_query, ,
+    [AC_CHECK_LIB(resolv, res_query, [ LIBASYNCNS_LIBADD="-lresolv" ],
+      [ save_libs="$LIBS"
+        LIBS="-lresolv $LIBS"
+        AC_MSG_CHECKING([for res_query in -lresolv (alternate version)])
+        AC_LINK_IFELSE(
+          [AC_LANG_PROGRAM([[#include <resolv.h>]], [[res_query(0,0,0,0,0)]])],
+          [ AC_MSG_RESULT(yes)
+  	  LIBASYNCNS_LIBADD="-lresolv" ],
+          [ AC_MSG_RESULT(no)
+            AC_CHECK_LIB(bind, res_query,
+              [ LIBASYNCNS_LIBADD="-lbind" ],
+  	    [ AC_MSG_ERROR(res_query not found) ] ) ] )
+        LIBS="$save_libs"
+      ] )
+    ]
+  )
+  AC_SUBST(LIBASYNCNS_LIBADD)
+fi
+
+case $host in
+  *-*-solaris* )
+     AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Needed to get declarations for msg_control and msg_controllen on Solaris)
+     AC_DEFINE(_XOPEN_SOURCE,          2, Needed to get declarations for msg_control and msg_controllen on Solaris)
+     AC_DEFINE(__EXTENSIONS__,         1, Needed to get declarations for msg_control and msg_controllen on Solaris)
+     ;;
+esac
 
 dnl
 dnl if statfs() takes 2 arguments (Posix) or 4 (Solaris)
@@ -1534,6 +1621,7 @@ inotify_support=no
 AC_CHECK_HEADERS([sys/inotify.h],
 [
 	inotify_support=yes
+	AC_CHECK_FUNCS(inotify_init1)
 ])
 
 AM_CONDITIONAL(HAVE_INOTIFY, [test "$inotify_support" = "yes"])
@@ -2789,6 +2877,10 @@ _______EOF
 
 typedef signed $glib_intptr_type_define gintptr;
 typedef unsigned $glib_intptr_type_define guintptr;
+
+#define G_GINTPTR_MODIFIER      $gintptr_modifier
+#define G_GINTPTR_FORMAT        $gintptr_format
+#define G_GUINTPTR_FORMAT       $guintptr_format
 _______EOF
 	else
 	  echo '#error SIZEOF_VOID_P unknown - This should never happen' >>$outfile
@@ -2965,6 +3057,10 @@ _______EOF
 #define GUINT_TO_LE(val)	((guint) GUINT${gintbits}_TO_LE (val))
 #define GINT_TO_BE(val)		((gint) GINT${gintbits}_TO_BE (val))
 #define GUINT_TO_BE(val)	((guint) GUINT${gintbits}_TO_BE (val))
+#define GSIZE_TO_LE(val)	((gsize) GUINT${gsizebits}_TO_LE (val))
+#define GSSIZE_TO_LE(val)	((gssize) GINT${gsizebits}_TO_LE (val))
+#define GSIZE_TO_BE(val)	((gsize) GUINT${gsizebits}_TO_BE (val))
+#define GSSIZE_TO_BE(val)	((gssize) GINT${gsizebits}_TO_BE (val))
 #define G_BYTE_ORDER $g_byte_order
 
 #define GLIB_SYSDEF_POLLIN =$g_pollin
@@ -2984,6 +3080,14 @@ _______EOF
  * not a process identifier.
  */
 typedef $g_pid_type GPid;
+
+#define GLIB_SYSDEF_AF_UNIX $g_af_unix
+#define GLIB_SYSDEF_AF_INET $g_af_inet
+#define GLIB_SYSDEF_AF_INET6 $g_af_inet6
+
+#define GLIB_SYSDEF_MSG_OOB $g_msg_oob
+#define GLIB_SYSDEF_MSG_PEEK $g_msg_peek
+#define GLIB_SYSDEF_MSG_DONTROUTE $g_msg_dontroute
 
 G_END_DECLS
 
@@ -3156,25 +3260,38 @@ esac
 
 gintbits=`expr $ac_cv_sizeof_int \* 8`
 glongbits=`expr $ac_cv_sizeof_long \* 8`
+gsizebits=`expr $ac_cv_sizeof_size_t \* 8`
 
 case $ac_cv_sizeof_void_p in
 $ac_cv_sizeof_int)
   glib_intptr_type_define=int
+  gintptr_modifier='""'
+  gintptr_format='"i"'
+  guintptr_format='"u"'
   glib_gpi_cast=''
   glib_gpui_cast=''
   ;;
 $ac_cv_sizeof_long)
   glib_intptr_type_define=long
+  gintptr_modifier='"l"'
+  gintptr_format='"li"'
+  guintptr_format='"lu"'
   glib_gpi_cast='(glong)'
   glib_gpui_cast='(gulong)'
   ;;
 $ac_cv_sizeof_long_long)
   glib_intptr_type_define='long long'
+  gintptr_modifier='"I64"'
+  gintptr_format='"I64i"'
+  guintptr_format='"I64u"'
   glib_gpi_cast='(gint64)'
   glib_gpui_cast='(guint64)'
   ;;
 $ac_cv_sizeof___int64)
   glib_intptr_type_define=__int64
+  gintptr_modifier='"I64"'
+  gintptr_format='"I64i"'
+  guintptr_format='"I64u"'
   glib_gpi_cast='(gint64)'
   glib_gpui_cast='(guint64)'
   ;;
@@ -3271,6 +3388,14 @@ g_pollhup=$glib_cv_value_POLLHUP
 g_pollerr=$glib_cv_value_POLLERR
 g_pollnval=$glib_cv_value_POLLNVAL
 
+g_af_unix=$glib_cv_value_AF_UNIX
+g_af_inet=$glib_cv_value_AF_INET
+g_af_inet6=$glib_cv_value_AF_INET6
+
+g_msg_peek=$glib_cv_value_MSG_PEEK
+g_msg_oob=$glib_cv_value_MSG_OOB
+g_msg_dontroute=$glib_cv_value_MSG_DONTROUTE
+
 g_stack_grows=$glib_cv_stack_grows
 
 g_have_eilseq=$have_eilseq
@@ -3355,6 +3480,7 @@ gthread/Makefile
 gio/Makefile
 gio/xdgmime/Makefile
 gio/inotify/Makefile
+gio/libasyncns/Makefile
 gio/fen/Makefile
 gio/fam/Makefile
 gio/win32/Makefile

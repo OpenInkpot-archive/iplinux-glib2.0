@@ -86,50 +86,11 @@
  *
  **/
 
-static void g_app_info_base_init (gpointer g_class);
-static void g_app_info_class_init (gpointer g_class,
-				   gpointer class_data);
-
-
-GType
-g_app_info_get_type (void)
-{
-  static volatile gsize g_define_type_id__volatile = 0;
-
-  if (g_once_init_enter (&g_define_type_id__volatile))
-    {
-     const GTypeInfo app_info_info =
-      {
-        sizeof (GAppInfoIface), /* class_size */
-	g_app_info_base_init,   /* base_init */
-	NULL,		/* base_finalize */
-	g_app_info_class_init,
-	NULL,		/* class_finalize */
-	NULL,		/* class_data */
-	0,
-	0,              /* n_preallocs */
-	NULL
-      };
-      GType g_define_type_id =
-	g_type_register_static (G_TYPE_INTERFACE, I_("GAppInfo"),
-				&app_info_info, 0);
-
-      g_type_interface_add_prerequisite (g_define_type_id, G_TYPE_OBJECT);
-
-      g_once_init_leave (&g_define_type_id__volatile, g_define_type_id);
-    }
-
-  return g_define_type_id__volatile;
-}
+typedef GAppInfoIface GAppInfoInterface;
+G_DEFINE_INTERFACE (GAppInfo, g_app_info, G_TYPE_OBJECT)
 
 static void
-g_app_info_class_init (gpointer g_class,
-		       gpointer class_data)
-{
-}
-
-static void
-g_app_info_base_init (gpointer g_class)
+g_app_info_default_init (GAppInfoInterface *iface)
 {
 }
 
@@ -159,7 +120,7 @@ g_app_info_dup (GAppInfo *appinfo)
  * @appinfo1: the first #GAppInfo.  
  * @appinfo2: the second #GAppInfo.
  * 
- * Checks if two #GAppInfos are equal.
+ * Checks if two #GAppInfo<!-- -->s are equal.
  *
  * Returns: %TRUE if @appinfo1 is equal to @appinfo2. %FALSE otherwise.
  **/
@@ -227,6 +188,33 @@ g_app_info_get_name (GAppInfo *appinfo)
 }
 
 /**
+ * g_app_info_get_display_name:
+ * @appinfo: a #GAppInfo.
+ *
+ * Gets the display name of the application. The display name is often more
+ * descriptive to the user than the name itself.
+ *
+ * Returns: the display name of the application for @appinfo, or the name if
+ * no display name is available.
+ *
+ * Since: 2.24
+ **/
+const char *
+g_app_info_get_display_name (GAppInfo *appinfo)
+{
+  GAppInfoIface *iface;
+
+  g_return_val_if_fail (G_IS_APP_INFO (appinfo), NULL);
+
+  iface = G_APP_INFO_GET_IFACE (appinfo);
+
+  if (iface->get_display_name == NULL)
+    return (* iface->get_name) (appinfo);
+
+  return (* iface->get_display_name) (appinfo);
+}
+
+/**
  * g_app_info_get_description:
  * @appinfo: a #GAppInfo.
  * 
@@ -254,7 +242,7 @@ g_app_info_get_description (GAppInfo *appinfo)
  * Gets the executable's name for the installed application.
  *
  * Returns: a string containing the @appinfo's application 
- * binary's name
+ * binaries name
  **/
 const char *
 g_app_info_get_executable (GAppInfo *appinfo)
@@ -328,7 +316,7 @@ g_app_info_set_as_default_for_type (GAppInfo    *appinfo,
  * @extension: a string containing the file extension (without the dot).
  * @error: a #GError.
  * 
- * Sets the application as the default handler for the given file extention.
+ * Sets the application as the default handler for the given file extension.
  *
  * Returns: %TRUE on success, %FALSE on error.
  **/
@@ -653,7 +641,7 @@ g_app_info_launch_default_for_uri (const char         *uri,
  * g_app_info_can_delete:
  * @appinfo: a #GAppInfo
  *
- * Obtains the information whether the GAppInfo can be deleted.
+ * Obtains the information whether the #GAppInfo can be deleted.
  * See g_app_info_delete().
  *
  * Returns: %TRUE if @appinfo can be deleted
@@ -680,7 +668,7 @@ g_app_info_can_delete (GAppInfo *appinfo)
  * g_app_info_delete:
  * @appinfo: a #GAppInfo
  *
- * Tries to delete an #GAppInfo. 
+ * Tries to delete a #GAppInfo.
  *
  * On some platforms, there may be a difference between user-defined
  * #GAppInfo<!-- -->s which can be deleted, and system-wide ones which

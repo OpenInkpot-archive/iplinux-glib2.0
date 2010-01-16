@@ -108,10 +108,6 @@ static gboolean g_unix_output_stream_close_finish (GOutputStream        *stream,
 static void
 g_unix_output_stream_finalize (GObject *object)
 {
-  GUnixOutputStream *stream;
-  
-  stream = G_UNIX_OUTPUT_STREAM (object);
-
   G_OBJECT_CLASS (g_unix_output_stream_parent_class)->finalize (object);
 }
 
@@ -144,8 +140,8 @@ g_unix_output_stream_class_init (GUnixOutputStreamClass *klass)
   g_object_class_install_property (gobject_class,
 				   PROP_FD,
 				   g_param_spec_int ("fd",
-						     _("File descriptor"),
-						     _("The file descriptor to write to"),
+						     P_("File descriptor"),
+						     P_("The file descriptor to write to"),
 						     G_MININT, G_MAXINT, -1,
 						     G_PARAM_READABLE | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
@@ -159,8 +155,8 @@ g_unix_output_stream_class_init (GUnixOutputStreamClass *klass)
   g_object_class_install_property (gobject_class,
 				   PROP_CLOSE_FD,
 				   g_param_spec_boolean ("close-fd",
-							 _("Close file descriptor"),
-							 _("Whether to close the file descriptor when the stream is closed"),
+							 P_("Close file descriptor"),
+							 P_("Whether to close the file descriptor when the stream is closed"),
 							 TRUE,
 							 G_PARAM_READABLE | G_PARAM_WRITABLE | G_PARAM_STATIC_NAME | G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 }
@@ -326,14 +322,14 @@ g_unix_output_stream_write (GOutputStream  *stream,
 
   unix_stream = G_UNIX_OUTPUT_STREAM (stream);
 
-  if (cancellable)
+  if (g_cancellable_make_pollfd (cancellable, &poll_fds[1]))
     {
       poll_fds[0].fd = unix_stream->priv->fd;
       poll_fds[0].events = G_IO_OUT;
-      g_cancellable_make_pollfd (cancellable, &poll_fds[1]);
       do
 	poll_ret = g_poll (poll_fds, 2, -1);
       while (poll_ret == -1 && errno == EINTR);
+      g_cancellable_release_fd (cancellable);
       
       if (poll_ret == -1)
 	{
@@ -494,7 +490,7 @@ g_unix_output_stream_write_async (GOutputStream       *stream,
 			     cancellable);
   
   g_source_set_callback (source, (GSourceFunc)write_async_cb, data, g_free);
-  g_source_attach (source, NULL);
+  g_source_attach (source, g_main_context_get_thread_default ());
   
   g_source_unref (source);
 }
@@ -591,7 +587,7 @@ g_unix_output_stream_close_async (GOutputStream        *stream,
   
   idle = g_idle_source_new ();
   g_source_set_callback (idle, (GSourceFunc)close_async_cb, data, g_free);
-  g_source_attach (idle, NULL);
+  g_source_attach (idle, g_main_context_get_thread_default ());
   g_source_unref (idle);
 }
 

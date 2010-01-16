@@ -5,7 +5,7 @@ NULL =
 SUBDIRS=
 
 if OS_UNIX
-SUBDIRS += xdgmime
+SUBDIRS += libasyncns xdgmime
 endif
 
 if OS_WIN32_AND_DLL_COMPILATION
@@ -89,6 +89,8 @@ local_sources = \
 	glocalfilemonitor.h 		\
 	glocalfileoutputstream.c 	\
 	glocalfileoutputstream.h 	\
+	glocalfileiostream.c		\
+	glocalfileiostream.h		\
 	glocalvfs.c 			\
 	glocalvfs.h 			\
 	$(NULL)
@@ -125,13 +127,19 @@ endif
 
 if OS_UNIX
 appinfo_sources += gdesktopappinfo.c gdesktopappinfo.h
-platform_libadd += xdgmime/libxdgmime.la
-platform_deps += xdgmime/libxdgmime.la
+platform_libadd += libasyncns/libasyncns.la xdgmime/libxdgmime.la
+platform_deps += libasyncns/libasyncns.la xdgmime/libxdgmime.la
 unix_sources = \
+	gunixconnection.c	\
+	gunixfdlist.c		\
+	gunixfdmessage.c	\
 	gunixmount.c		\
 	gunixmount.h		\
 	gunixmounts.c 		\
 	gunixmounts.h 		\
+	gunixresolver.c		\
+	gunixresolver.h		\
+	gunixsocketaddress.c	\
 	gunixvolume.c 		\
 	gunixvolume.h 		\
 	gunixvolumemonitor.c 	\
@@ -144,18 +152,24 @@ unix_sources = \
 giounixincludedir=$(includedir)/gio-unix-2.0/gio
 giounixinclude_HEADERS = \
 	gdesktopappinfo.h	\
+	gunixconnection.h	\
 	gunixmounts.h 		\
+	gunixfdlist.h		\
+	gunixfdmessage.h	\
 	gunixinputstream.h 	\
 	gunixoutputstream.h 	\
+	gunixsocketaddress.h	\
 	$(NULL)
 endif
 
 if OS_WIN32
 appinfo_sources += gwin32appinfo.c gwin32appinfo.h
-platform_libadd += -lshlwapi
+platform_libadd += -lshlwapi -lws2_32 -ldnsapi
 win32_sources = \
 	gwin32mount.c \
 	gwin32mount.h \
+	gwin32resolver.c \
+	gwin32resolver.h \
 	gwin32volumemonitor.c \
 	gwin32volumemonitor.h \
 	$(NULL)
@@ -168,12 +182,17 @@ libgio_2_0_la_SOURCES =		\
 	gappinfo.c 		\
 	gasynchelper.c 		\
 	gasynchelper.h 		\
+	gasyncinitable.c	\
 	gasyncresult.c 		\
 	gbufferedinputstream.c 	\
 	gbufferedoutputstream.c \
 	gcancellable.c 		\
 	gcontenttype.c 		\
 	gcontenttypeprivate.h 	\
+	gcharsetconverter.c	\
+	gconverter.c		\
+	gconverterinputstream.c	\
+	gconverteroutputstream.c	\
 	gdatainputstream.c 	\
 	gdataoutputstream.c 	\
 	gdrive.c 		\
@@ -189,19 +208,25 @@ libgio_2_0_la_SOURCES =		\
 	gfileenumerator.c 	\
 	gfileicon.c 		\
 	gfileinfo.c 		\
+	gfileinfo-priv.h 	\
 	gfileinputstream.c 	\
 	gfilemonitor.c 		\
 	gfilenamecompleter.c 	\
 	gfileoutputstream.c 	\
+	gfileiostream.c		\
 	gfilterinputstream.c 	\
 	gfilteroutputstream.c 	\
 	gicon.c 		\
+	ginetaddress.c		\
+	ginetsocketaddress.c	\
+	ginitable.c		\
 	ginputstream.c 		\
 	gioenums.h		\
 	gioerror.c 		\
 	giomodule.c 		\
 	giomodule-priv.h	\
 	gioscheduler.c 		\
+	giostream.c		\
 	gloadableicon.c 	\
 	gmount.c 		\
 	gmemoryinputstream.c 	\
@@ -209,17 +234,42 @@ libgio_2_0_la_SOURCES =		\
 	gmountoperation.c 	\
 	gnativevolumemonitor.c 	\
 	gnativevolumemonitor.h 	\
+	gnetworkaddress.c	\
+	gnetworkingprivate.h	\
+	gnetworkservice.c	\
 	goutputstream.c 	\
 	gpollfilemonitor.c 	\
 	gpollfilemonitor.h 	\
+	gresolver.c		\
 	gseekable.c 		\
 	gsimpleasyncresult.c 	\
+	gsocket.c		\
+	gsocketaddress.c	\
+	gsocketaddressenumerator.c \
+	gsocketclient.c		\
+	gsocketconnectable.c	\
+	gsocketconnection.c	\
+	gsocketcontrolmessage.c	\
+	gsocketinputstream.c	\
+	gsocketinputstream.h	\
+	gsocketlistener.c	\
+	gsocketoutputstream.c	\
+	gsocketoutputstream.h	\
+	gsocketservice.c	\
+	gsrvtarget.c		\
+	gtcpconnection.c	\
+	gthreadedsocketservice.c\
 	gthemedicon.c 		\
+	gthreadedresolver.c	\
+	gthreadedresolver.h	\
 	gunionvolumemonitor.c 	\
 	gunionvolumemonitor.h 	\
+	gutf8inputstream.c	\
 	gvfs.c 			\
 	gvolume.c 		\
 	gvolumemonitor.c 	\
+	gzlibcompressor.c	\
+	gzlibdecompressor.c	\
 	gmountprivate.h 	\
 	gioenumtypes.h		\
 	gioenumtypes.c		\
@@ -239,6 +289,7 @@ libgio_2_0_la_LIBADD = \
 	$(top_builddir)/gobject/libgobject-2.0.la 	\
 	$(top_builddir)/gmodule/libgmodule-2.0.la 	\
 	$(platform_libadd) 				\
+	$(ZLIB_LIBS)					\
 	$(SELINUX_LIBS) 				\
 	$(GLIB_LIBS) 					\
 	$(XATTR_LIBS) 					\
@@ -277,11 +328,16 @@ libgio_2_0_la_DEPENDENCIES = $(gio_def) $(platform_deps)
 
 gio_headers =			\
 	gappinfo.h 		\
+	gasyncinitable.h	\
 	gasyncresult.h 		\
 	gbufferedinputstream.h 	\
 	gbufferedoutputstream.h \
 	gcancellable.h 		\
 	gcontenttype.h 		\
+	gcharsetconverter.h	\
+	gconverter.h		\
+	gconverterinputstream.h	\
+	gconverteroutputstream.h	\
 	gdatainputstream.h 	\
 	gdataoutputstream.h 	\
 	gdrive.h 		\
@@ -296,29 +352,52 @@ gio_headers =			\
 	gfilemonitor.h 		\
 	gfilenamecompleter.h 	\
 	gfileoutputstream.h 	\
+	gfileiostream.h		\
 	gfilterinputstream.h 	\
 	gfilteroutputstream.h 	\
 	gicon.h 		\
+	ginetaddress.h		\
+	ginetsocketaddress.h	\
 	ginputstream.h 		\
+	ginitable.h		\
 	gio.h			\
 	giotypes.h		\
 	gioenums.h		\
 	gioerror.h 		\
 	giomodule.h 		\
 	gioscheduler.h 		\
+	giostream.h		\
 	gloadableicon.h 	\
 	gmount.h 		\
 	gmemoryinputstream.h 	\
 	gmemoryoutputstream.h 	\
 	gmountoperation.h 	\
 	gnativevolumemonitor.h 	\
+	gnetworkaddress.h	\
+	gnetworkservice.h	\
 	goutputstream.h 	\
+	gresolver.h		\
 	gseekable.h 		\
 	gsimpleasyncresult.h 	\
+	gsocket.h		\
+	gsocketaddress.h	\
+	gsocketaddressenumerator.h \
+	gsocketclient.h		\
+	gsocketconnectable.h	\
+	gsocketconnection.h	\
+	gsocketcontrolmessage.h	\
+	gsocketlistener.h	\
+	gsocketservice.h	\
+	gsrvtarget.h		\
+	gtcpconnection.h	\
+	gthreadedsocketservice.h\
 	gthemedicon.h 		\
+	gutf8inputstream.h	\
 	gvfs.h 			\
 	gvolume.h 		\
 	gvolumemonitor.h 	\
+	gzlibcompressor.h	\
+	gzlibdecompressor.h	\
 	$(NULL)
 
 gioincludedir=$(includedir)/glib-2.0/gio/
@@ -363,3 +442,12 @@ gioenumtypes.c: $(gio_headers) gioenumtypes.c.template
 
 gio-2.0.lib: libgio-2.0.la gio.def
 	lib -machine:@LIB_EXE_MACHINE_FLAG@ -name:libgio-2.0-$(LT_CURRENT_MINUS_AGE).dll -def:gio.def -out:$@
+
+if HAVE_GLIB_RUNTIME_LIBDIR
+install-data-hook:
+	mkdir -p $(DESTDIR)$(libdir)/$(GLIB_RUNTIME_LIBDIR)
+	mv $(DESTDIR)$(libdir)/libgio-2.0.so.0 $(DESTDIR)$(libdir)/$(GLIB_RUNTIME_LIBDIR)
+	mv $(DESTDIR)$(libdir)/libgio-2.0.so.0.$(LT_CURRENT).$(LT_REVISION) $(DESTDIR)$(libdir)/$(GLIB_RUNTIME_LIBDIR)
+	rm -f $(DESTDIR)$(libdir)/libgio-2.0.so
+	ln -s $(GLIB_RUNTIME_LIBDIR)/libgio-2.0.so.0.$(LT_CURRENT).$(LT_REVISION) $(DESTDIR)$(libdir)/libgio-2.0.so
+endif

@@ -46,6 +46,40 @@ typedef enum {
   G_APP_INFO_CREATE_SUPPORTS_URIS  = (1 << 1)   /*< nick=supports-uris >*/
 } GAppInfoCreateFlags;
 
+/**
+ * GConverterFlags:
+ * @G_CONVERTER_NO_FLAGS: No flags.
+ * @G_CONVERTER_INPUT_AT_END: At end of input data
+ * @G_CONVERTER_FLUSH: Flush data
+ *
+ * Flags used when calling a g_converter_convert().
+ *
+ * Since: 2.24
+ */
+typedef enum {
+  G_CONVERTER_NO_FLAGS     = 0,         /*< nick=none >*/
+  G_CONVERTER_INPUT_AT_END = (1 << 0),  /*< nick=input-at-end >*/
+  G_CONVERTER_FLUSH        = (1 << 1)   /*< nick=flush >*/
+} GConverterFlags;
+
+/**
+ * GConverterResult:
+ * @G_CONVERTER_ERROR: There was an error during conversion.
+ * @G_CONVERTER_CONVERTED: Some data was consumed or produced
+ * @G_CONVERTER_FINISHED: The conversion is finished
+ * @G_CONVERTER_FLUSHED: Flushing is finished
+ *
+ * Results returned from g_converter_convert().
+ *
+ * Since: 2.24
+ */
+typedef enum {
+  G_CONVERTER_ERROR     = 0,  /*< nick=error >*/
+  G_CONVERTER_CONVERTED = 1,  /*< nick=converted >*/
+  G_CONVERTER_FINISHED  = 2,  /*< nick=finished >*/
+  G_CONVERTER_FLUSHED   = 3   /*< nick=flushed >*/
+} GConverterResult;
+
 
 /**
  * GDataStreamByteOrder:
@@ -92,6 +126,7 @@ typedef enum {
  * @G_FILE_ATTRIBUTE_TYPE_UINT64: an unsigned 8-byte/64-bit integer.
  * @G_FILE_ATTRIBUTE_TYPE_INT64: a signed 8-byte/64-bit integer.
  * @G_FILE_ATTRIBUTE_TYPE_OBJECT: a #GObject.
+ * @G_FILE_ATTRIBUTE_TYPE_STRINGV: a %NULL terminated char **. Since 2.22
  *
  * The data types for file attributes.
  **/
@@ -104,7 +139,8 @@ typedef enum {
   G_FILE_ATTRIBUTE_TYPE_INT32,
   G_FILE_ATTRIBUTE_TYPE_UINT64,
   G_FILE_ATTRIBUTE_TYPE_INT64,
-  G_FILE_ATTRIBUTE_TYPE_OBJECT
+  G_FILE_ATTRIBUTE_TYPE_OBJECT,
+  G_FILE_ATTRIBUTE_TYPE_STRINGV
 } GFileAttributeType;
 
 
@@ -198,6 +234,45 @@ typedef enum {
   G_MOUNT_UNMOUNT_FORCE = (1 << 0)
 } GMountUnmountFlags;
 
+/**
+ * GDriveStartFlags:
+ * @G_DRIVE_START_NONE: No flags set.
+ *
+ * Flags used when starting a drive.
+ *
+ * Since: 2.22
+ */
+typedef enum {
+  G_DRIVE_START_NONE = 0
+} GDriveStartFlags;
+
+/**
+ * GDriveStartStopType:
+ * @G_DRIVE_START_STOP_TYPE_UNKNOWN: Unknown or drive doesn't support
+ *    start/stop.
+ * @G_DRIVE_START_STOP_TYPE_SHUTDOWN: The stop method will physically
+ *    shut down the drive and e.g. power down the port the drive is
+ *    attached to.
+ * @G_DRIVE_START_STOP_TYPE_NETWORK: The start/stop methods are used
+ *    for connecting/disconnect to the drive over the network.
+ * @G_DRIVE_START_STOP_TYPE_MULTIDISK: The start/stop methods will
+ *    assemble/disassemble a virtual drive from several physical
+ *    drives.
+ * @G_DRIVE_START_STOP_TYPE_PASSWORD: The start/stop methods will
+ *    unlock/lock the disk (for example using the ATA <quote>SECURITY
+ *    UNLOCK DEVICE</quote> command)
+ *
+ * Enumeration describing how a drive can be started/stopped.
+ *
+ * Since: 2.22
+ */
+typedef enum {
+  G_DRIVE_START_STOP_TYPE_UNKNOWN,
+  G_DRIVE_START_STOP_TYPE_SHUTDOWN,
+  G_DRIVE_START_STOP_TYPE_NETWORK,
+  G_DRIVE_START_STOP_TYPE_MULTIDISK,
+  G_DRIVE_START_STOP_TYPE_PASSWORD
+} GDriveStartStopType;
 
 /**
  * GFileCopyFlags:
@@ -342,6 +417,10 @@ typedef enum {
  * @G_IO_ERROR_TOO_MANY_OPEN_FILES: The current process has too many files 
  *     open and can't open any more. Duplicate descriptors do count toward 
  *     this limit. Since 2.20
+ * @G_IO_ERROR_NOT_INITIALIZED: The object has not been initialized. Since 2.22
+ * @G_IO_ERROR_ADDRESS_IN_USE: The requested address is already in use. Since 2.22
+ * @G_IO_ERROR_PARTIAL_INPUT: Need more input to finish operation. Since 2.24
+ * @G_IO_ERROR_INVALID_DATA: There input data was invalid. Since 2.24
  *
  * Error codes returned by GIO functions.
  *
@@ -378,7 +457,11 @@ typedef enum {
   G_IO_ERROR_HOST_NOT_FOUND,
   G_IO_ERROR_WOULD_MERGE,
   G_IO_ERROR_FAILED_HANDLED,
-  G_IO_ERROR_TOO_MANY_OPEN_FILES
+  G_IO_ERROR_TOO_MANY_OPEN_FILES,
+  G_IO_ERROR_NOT_INITIALIZED,
+  G_IO_ERROR_ADDRESS_IN_USE,
+  G_IO_ERROR_PARTIAL_INPUT,
+  G_IO_ERROR_INVALID_DATA
 } GIOErrorEnum;
 
 
@@ -460,7 +543,7 @@ typedef enum {
 /**
  * GEmblemOrigin:
  * @G_EMBLEM_ORIGIN_UNKNOWN: Emblem of unknown origin
- * @G_EMBLEM_ORIGIN_DEVICE: Embleme adds device-specific information
+ * @G_EMBLEM_ORIGIN_DEVICE: Emblem adds device-specific information
  * @G_EMBLEM_ORIGIN_LIVEMETADATA: Emblem depicts live metadata, such as "readonly"
  * @G_EMBLEM_ORIGIN_TAG: Emblem comes from a user-defined tag, e.g. set by nautilus (in the future)
  *
@@ -476,6 +559,136 @@ typedef enum  {
   G_EMBLEM_ORIGIN_TAG
 } GEmblemOrigin;
 
+/**
+ * GResolverError:
+ * @G_RESOLVER_ERROR_NOT_FOUND: the requested name/address/service was not
+ *     found
+ * @G_RESOLVER_ERROR_TEMPORARY_FAILURE: the requested information could not
+ *     be looked up due to a network error or similar problem
+ * @G_RESOLVER_ERROR_INTERNAL: unknown error
+ *
+ * An error code used with %G_RESOLVER_ERROR in a #GError returned
+ * from a #GResolver routine.
+ *
+ * Since: 2.22
+ */
+typedef enum {
+  G_RESOLVER_ERROR_NOT_FOUND,
+  G_RESOLVER_ERROR_TEMPORARY_FAILURE,
+  G_RESOLVER_ERROR_INTERNAL
+} GResolverError;
+
+/**
+ * GSocketFamily:
+ * @G_SOCKET_FAMILY_INVALID: no address family
+ * @G_SOCKET_FAMILY_IPV4: the IPv4 family
+ * @G_SOCKET_FAMILY_IPV6: the IPv6 family
+ * @G_SOCKET_FAMILY_UNIX: the UNIX domain family
+ *
+ * The protocol family of a #GSocketAddress. (These values are
+ * identical to the system defines %AF_INET, %AF_INET6 and %AF_UNIX,
+ * if available.)
+ *
+ * Since: 2.22
+ */
+typedef enum {
+  G_SOCKET_FAMILY_INVALID,
+#ifdef GLIB_SYSDEF_AF_UNIX
+  G_SOCKET_FAMILY_UNIX = GLIB_SYSDEF_AF_UNIX,
+#endif
+  G_SOCKET_FAMILY_IPV4 = GLIB_SYSDEF_AF_INET,
+  G_SOCKET_FAMILY_IPV6 = GLIB_SYSDEF_AF_INET6
+} GSocketFamily;
+
+/**
+ * GSocketType:
+ * @G_SOCKET_TYPE_INVALID: Type unknown or wrong
+ * @G_SOCKET_TYPE_STREAM: Reliable connection-based byte streams (e.g. TCP).
+ * @G_SOCKET_TYPE_DATAGRAM: Connectionless, unreliable datagram passing.
+ *     (e.g. UDP)
+ * @G_SOCKET_TYPE_SEQPACKET: Reliable connection-based passing of datagrams
+ *     of fixed maximum length (e.g. SCTP).
+ *
+ * Flags used when creating a #GSocket. Some protocols may not implement
+ * all the socket types.
+ *
+ * Since: 2.22
+ */
+typedef enum
+{
+  G_SOCKET_TYPE_INVALID,
+  G_SOCKET_TYPE_STREAM,
+  G_SOCKET_TYPE_DATAGRAM,
+  G_SOCKET_TYPE_SEQPACKET
+} GSocketType;
+
+/**
+ * GSocketMsgFlags:
+ * @G_SOCKET_MSG_NONE: No flags.
+ * @G_SOCKET_MSG_OOB: Request to send/receive out of band data.
+ * @G_SOCKET_MSG_PEEK: Read data from the socket without removing it from
+ *     the queue.
+ * @G_SOCKET_MSG_DONTROUTE: Don't use a gateway to send out the packet,
+ *     only send to hosts on directly connected networks.
+ *
+ * Flags used in g_socket_receive_message() and g_socket_send_message().
+ * The flags listed in the enum are some commonly available flags, but the
+ * values used for them are the same as on the platform, and any other flags
+ * are passed in/out as is. So to use a platform specific flag, just include
+ * the right system header and pass in the flag.
+ *
+ * Since: 2.22
+ */
+typedef enum
+{
+  G_SOCKET_MSG_NONE,
+  G_SOCKET_MSG_OOB = GLIB_SYSDEF_MSG_OOB,
+  G_SOCKET_MSG_PEEK = GLIB_SYSDEF_MSG_PEEK,
+  G_SOCKET_MSG_DONTROUTE = GLIB_SYSDEF_MSG_DONTROUTE
+} GSocketMsgFlags;
+
+/**
+ * GSocketProtocol:
+ * @G_SOCKET_PROTOCOL_UNKNOWN: The protocol type is unknown
+ * @G_SOCKET_PROTOCOL_DEFAULT: The default protocol for the family/type
+ * @G_SOCKET_PROTOCOL_TCP: TCP over IP
+ * @G_SOCKET_PROTOCOL_UDP: UDP over IP
+ * @G_SOCKET_PROTOCOL_SCTP: SCTP over IP
+ *
+ * A protocol identifier is specified when creating a #GSocket, which is a
+ * family/type specific identifier, where 0 means the default protocol for
+ * the particular family/type.
+ *
+ * This enum contains a set of commonly available and used protocols. You
+ * can also pass any other identifiers handled by the platform in order to
+ * use protocols not listed here.
+ *
+ * Since: 2.22
+ */
+typedef enum {
+  G_SOCKET_PROTOCOL_UNKNOWN = -1,
+  G_SOCKET_PROTOCOL_DEFAULT = 0,
+  G_SOCKET_PROTOCOL_TCP     = 6,
+  G_SOCKET_PROTOCOL_UDP     = 17,
+  G_SOCKET_PROTOCOL_SCTP    = 132
+} GSocketProtocol;
+
+/**
+ * GZlibCompressorFormat:
+ * @G_ZLIB_COMPRESSOR_FORMAT_ZLIB: deflate compression with zlib header
+ * @G_ZLIB_COMPRESSOR_FORMAT_GZIP: gzip file format
+ * @G_ZLIB_COMPRESSOR_FORMAT_RAW: deflate compression with no header
+ *
+ * Used to select the type of data format to use for #GZlibDecompressor
+ * and #GZlibCompressor.
+ *
+ * Since: 2.24
+ */
+typedef enum {
+  G_ZLIB_COMPRESSOR_FORMAT_ZLIB,
+  G_ZLIB_COMPRESSOR_FORMAT_GZIP,
+  G_ZLIB_COMPRESSOR_FORMAT_RAW
+} GZlibCompressorFormat;
 
 G_END_DECLS
 

@@ -1279,6 +1279,7 @@ various_string_tests (void)
   GTimeVal ref_date, date;
   gchar *tmp_string = NULL, *tmp_string_2, *string, *date_str;
   guint i;
+  gchar *tz;
 
   if (g_test_verbose())
     g_print ("checking string chunks...");
@@ -1308,12 +1309,15 @@ various_string_tests (void)
 #define REF_INVALID2      "1980-02-22T10:36:00Zulu"
 #define REF_SEC_UTC       320063760
 #define REF_STR_UTC       "1980-02-22T10:36:00Z"
+#define REF_STR_LOCAL     "1980-02-22T13:36:00"
 #define REF_STR_CEST      "1980-02-22T12:36:00+02:00"
 #define REF_STR_EST       "19800222T053600-0500"
+#define REF_STR_NST       "1980-02-22T07:06:00-03:30"
 #define REF_USEC_UTC      50000
 #define REF_STR_USEC_UTC  "1980-02-22T10:36:00.050000Z"
 #define REF_STR_USEC_CEST "19800222T123600.050000000+0200"
-#define REF_STR_USEC_EST  "1980-02-22T05:36:00.05-05:00"
+#define REF_STR_USEC_EST  "1980-02-22T05:36:00,05-05:00"
+#define REF_STR_USEC_NST  "19800222T070600,0500-0330"
 
   if (g_test_verbose())
     g_print ("checking g_time_val_from_iso8601...\n");
@@ -1328,6 +1332,25 @@ various_string_tests (void)
              date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
   g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);
 
+  /* predefine time zone */
+  tz = g_getenv("TZ");
+  g_setenv("TZ", "UTC-03:00", 1);
+  tzset();
+
+  g_assert (g_time_val_from_iso8601 (REF_STR_LOCAL, &date) != FALSE);
+  if (g_test_verbose())
+    g_print ("\t=> LOCAL stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
+             date.tv_sec, date.tv_usec, ref_date.tv_sec, ref_date.tv_usec,
+             date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
+  g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);
+
+  /* revert back user defined time zone */
+  if (tz)
+    g_setenv("TZ", tz, TRUE);
+  else
+    g_unsetenv("TZ");
+  tzset();
+
   g_assert (g_time_val_from_iso8601 (REF_STR_CEST, &date) != FALSE);
   if (g_test_verbose())
     g_print ("\t=> CEST stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
@@ -1338,6 +1361,13 @@ various_string_tests (void)
   g_assert (g_time_val_from_iso8601 (REF_STR_EST, &date) != FALSE);
   if (g_test_verbose())
     g_print ("\t=> EST stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
+             date.tv_sec, date.tv_usec, ref_date.tv_sec, ref_date.tv_usec,
+             date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
+  g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);
+
+  g_assert (g_time_val_from_iso8601 (REF_STR_NST, &date) != FALSE);
+  if (g_test_verbose())
+    g_print ("\t=> NST stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
              date.tv_sec, date.tv_usec, ref_date.tv_sec, ref_date.tv_usec,
              date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
   g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);
@@ -1360,6 +1390,13 @@ various_string_tests (void)
   g_assert (g_time_val_from_iso8601 (REF_STR_USEC_EST, &date) != FALSE);
   if (g_test_verbose())
     g_print ("\t=> EST stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
+             date.tv_sec, date.tv_usec, ref_date.tv_sec, ref_date.tv_usec,
+             date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
+  g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);
+
+  g_assert (g_time_val_from_iso8601 (REF_STR_USEC_NST, &date) != FALSE);
+  if (g_test_verbose())
+    g_print ("\t=> NST stamp = %ld.%06ld (should be: %ld.%06ld) (%ld.%06ld off)\n",
              date.tv_sec, date.tv_usec, ref_date.tv_sec, ref_date.tv_usec,
              date.tv_sec - ref_date.tv_sec, date.tv_usec - ref_date.tv_usec);
   g_assert (date.tv_sec == ref_date.tv_sec && date.tv_usec == ref_date.tv_usec);

@@ -1243,7 +1243,7 @@ gpointer g_type_instance_get_private    (GTypeInstance              *instance,
  * @_C_: Custom code that gets inserted in the *_get_type() function.
  * 
  * A convenience macro for type implementations.  
- * Similar to G_DEFINE_TYPE(), but allows to insert custom code into the 
+ * Similar to G_DEFINE_TYPE(), but allows you to insert custom code into the 
  * *_get_type() function, e.g. interface implementations via G_IMPLEMENT_INTERFACE().
  * See G_DEFINE_TYPE_EXTENDED() for an example.
  * 
@@ -1273,7 +1273,7 @@ gpointer g_type_instance_get_private    (GTypeInstance              *instance,
  * @_C_: Custom code that gets inserted in the @type_name_get_type() function.
  * 
  * A convenience macro for type implementations.
- * Similar to G_DEFINE_TYPE_WITH_CODE(), but defines an abstract type and allows to 
+ * Similar to G_DEFINE_TYPE_WITH_CODE(), but defines an abstract type and allows you to 
  * insert custom code into the *_get_type() function, e.g. interface implementations 
  * via G_IMPLEMENT_INTERFACE(). See G_DEFINE_TYPE_EXTENDED() for an example.
  * 
@@ -1283,21 +1283,21 @@ gpointer g_type_instance_get_private    (GTypeInstance              *instance,
 /**
  * G_DEFINE_TYPE_EXTENDED:
  * @TN: The name of the new type, in Camel case.
- * @t_n: The name of the new type, in lowercase, with words 
- *  separated by '_'.
+ * @t_n: The name of the new type, in lowercase, with words
+ *    separated by '_'.
  * @T_P: The #GType of the parent type.
  * @_f_: #GTypeFlags to pass to g_type_register_static()
  * @_C_: Custom code that gets inserted in the *_get_type() function.
- * 
- * The most general convenience macro for type implementations, on which 
- * G_DEFINE_TYPE(), etc are based. 
- * 
+ *
+ * The most general convenience macro for type implementations, on which
+ * G_DEFINE_TYPE(), etc are based.
+ *
  * |[
- * G_DEFINE_TYPE_EXTENDED (GtkGadget, 
- *                         gtk_gadget, 
+ * G_DEFINE_TYPE_EXTENDED (GtkGadget,
+ *                         gtk_gadget,
  *                         GTK_TYPE_WIDGET,
- *                         0, 
- *                         G_IMPLEMENT_INTERFACE (TYPE_GIZMO, 
+ *                         0,
+ *                         G_IMPLEMENT_INTERFACE (TYPE_GIZMO,
  *                                                gtk_gadget_gizmo_init));
  * ]|
  * expands to
@@ -1310,55 +1310,90 @@ gpointer g_type_instance_get_private    (GTypeInstance              *instance,
  *   gtk_gadget_parent_class = g_type_class_peek_parent (klass);
  *   gtk_gadget_class_init ((GtkGadgetClass*) klass);
  * }
- * 
+ *
  * GType
  * gtk_gadget_get_type (void)
  * {
- *   static GType g_define_type_id = 0; 
- *   if (G_UNLIKELY (g_define_type_id == 0)) 
- *     { 
- *       static const GTypeInfo g_define_type_info = { 
- *         sizeof (GtkGadgetClass), 
- *         (GBaseInitFunc) NULL, 
- *         (GBaseFinalizeFunc) NULL, 
- *         (GClassInitFunc) gtk_gadget_class_intern_init, 
- *         (GClassFinalizeFunc) NULL, 
- *         NULL,   // class_data 
- *         sizeof (GtkGadget), 
- *         0,      // n_preallocs 
- *         (GInstanceInitFunc) gtk_gadget_init, 
- *       }; 
- *       g_define_type_id = g_type_register_static (GTK_TYPE_WIDGET, "GtkGadget", &g_define_type_info, 0); 
+ *   static volatile gsize g_define_type_id__volatile = 0;
+ *   if (g_once_init_enter (&g_define_type_id__volatile))
+ *     {
+ *       GType g_define_type_id =
+ *         g_type_register_static_simple (GTK_TYPE_WIDGET,
+ *                                        g_intern_static_string ("GtkGadget"),
+ *                                        sizeof (GtkGadgetClass),
+ *                                        (GClassInitFunc) gtk_gadget_class_intern_init,
+ *                                        sizeof (GtkGadget),
+ *                                        (GInstanceInitFunc) gtk_gadget_init,
+ *                                        (GTypeFlags) flags);
  *       {
  *         static const GInterfaceInfo g_implement_interface_info = {
  *           (GInterfaceInitFunc) gtk_gadget_gizmo_init
  *         };
  *         g_type_add_interface_static (g_define_type_id, TYPE_GIZMO, &g_implement_interface_info);
- *       } 
- *     } 
- *   return g_define_type_id; 
+ *       }
+ *       g_once_init_leave (&g_define_type_id__volatile, g_define_type_id);
+ *     }
+ *   return g_define_type_id__volatile;
  * }
  * ]|
- * The only pieces which have to be manually provided are the definitions of the 
- * instance and class structure and the definitions of the instance and class 
- * init functions.
- * 
+ * The only pieces which have to be manually provided are the definitions of
+ * the instance and class structure and the definitions of the instance and
+ * class init functions.
+ *
  * Since: 2.4
  */
 #define G_DEFINE_TYPE_EXTENDED(TN, t_n, T_P, _f_, _C_)	    _G_DEFINE_TYPE_EXTENDED_BEGIN (TN, t_n, T_P, _f_) {_C_;} _G_DEFINE_TYPE_EXTENDED_END()
 
 /**
+ * G_DEFINE_INTERFACE:
+ * @TN: The name of the new type, in Camel case.
+ * @t_n: The name of the new type, in lowercase, with words separated by '_'.
+ * @T_P: The #GType of the prerequisite type for the interface, or 0
+ * (%G_TYPE_INVALID) for no prerequisite type.
+ *
+ * A convenience macro for #GTypeInterface definitions, which declares
+ * a default vtable initialization function and defines a *_get_type()
+ * function.
+ *
+ * The macro expects the interface initialization function to have the
+ * name <literal>t_n ## _default_init</literal>, and the interface
+ * structure to have the name <literal>TN ## Interface</literal>.
+ *
+ * Since: 2.20
+ */
+#define G_DEFINE_INTERFACE(TN, t_n, T_P)		    G_DEFINE_INTERFACE_WITH_CODE(TN, t_n, T_P, ;)
+
+/**
+ * G_DEFINE_INTERFACE_WITH_CODE:
+ * @TN: The name of the new type, in Camel case.
+ * @t_n: The name of the new type, in lowercase, with words separated by '_'.
+ * @T_P: The #GType of the prerequisite type for the interface, or 0
+ * (%G_TYPE_INVALID) for no prerequisite type.
+ * @_C_: Custom code that gets inserted in the *_get_type() function.
+ *
+ * A convenience macro for #GTypeInterface definitions. Similar to
+ * G_DEFINE_INTERFACE(), but allows you to insert custom code into the
+ * *_get_type() function, e.g. additional interface implementations
+ * via G_IMPLEMENT_INTERFACE(), or additional prerequisite types. See
+ * G_DEFINE_TYPE_EXTENDED() for a similar example using
+ * G_DEFINE_TYPE_WITH_CODE().
+ *
+ * Since: 2.20
+ */
+#define G_DEFINE_INTERFACE_WITH_CODE(TN, t_n, T_P, _C_)     _G_DEFINE_INTERFACE_EXTENDED_BEGIN(TN, t_n, T_P) {_C_;} _G_DEFINE_INTERFACE_EXTENDED_END()
+
+/**
  * G_IMPLEMENT_INTERFACE:
  * @TYPE_IFACE: The #GType of the interface to add
  * @iface_init: The interface init function
- * 
+ *
  * A convenience macro to ease interface addition in the @_C_ section
- * of G_DEFINE_TYPE_WITH_CODE() or G_DEFINE_ABSTRACT_TYPE_WITH_CODE(). 
+ * of G_DEFINE_TYPE_WITH_CODE() or G_DEFINE_ABSTRACT_TYPE_WITH_CODE().
  * See G_DEFINE_TYPE_EXTENDED() for an example.
- * 
+ *
  * Note that this macro can only be used together with the G_DEFINE_TYPE_*
  * macros, since it depends on variable names from those macros.
- * 
+ *
  * Since: 2.4
  */
 #define G_IMPLEMENT_INTERFACE(TYPE_IFACE, iface_init)       { \
@@ -1402,6 +1437,34 @@ type_name##_get_type (void) \
   return g_define_type_id__volatile;	\
 } /* closes type_name##_get_type() */
 
+#define _G_DEFINE_INTERFACE_EXTENDED_BEGIN(TypeName, type_name, TYPE_PREREQ) \
+\
+static void     type_name##_default_init        (TypeName##Interface *klass); \
+\
+GType \
+type_name##_get_type (void) \
+{ \
+  static volatile gsize g_define_type_id__volatile = 0; \
+  if (g_once_init_enter (&g_define_type_id__volatile))  \
+    { \
+      GType g_define_type_id = \
+        g_type_register_static_simple (G_TYPE_INTERFACE, \
+                                       g_intern_static_string (#TypeName), \
+                                       sizeof (TypeName##Interface), \
+                                       (GClassInitFunc)type_name##_default_init, \
+                                       0, \
+                                       (GInstanceInitFunc)NULL, \
+                                       (GTypeFlags) 0); \
+      if (TYPE_PREREQ) \
+        g_type_interface_add_prerequisite (g_define_type_id, TYPE_PREREQ); \
+      { /* custom code follows */
+#define _G_DEFINE_INTERFACE_EXTENDED_END()	\
+        /* following custom code */		\
+      }						\
+      g_once_init_leave (&g_define_type_id__volatile, g_define_type_id); \
+    }						\
+  return g_define_type_id__volatile;			\
+} /* closes type_name##_get_type() */
 
 /* --- protected (for fundamental type implementations) --- */
 GTypePlugin*	 g_type_get_plugin		(GType		     type);
@@ -1478,7 +1541,9 @@ G_GNUC_INTERNAL void    g_signal_init           (void); /* sync with gsignal.c *
 #ifdef	__GNUC__
 #  define _G_TYPE_CIT(ip, gt)             (G_GNUC_EXTENSION ({ \
   GTypeInstance *__inst = (GTypeInstance*) ip; GType __t = gt; gboolean __r; \
-  if (__inst && __inst->g_class && __inst->g_class->g_type == __t) \
+  if (!__inst) \
+    __r = FALSE; \
+  else if (__inst->g_class && __inst->g_class->g_type == __t) \
     __r = TRUE; \
   else \
     __r = g_type_check_instance_is_a (__inst, __t); \
@@ -1486,7 +1551,9 @@ G_GNUC_INTERNAL void    g_signal_init           (void); /* sync with gsignal.c *
 }))
 #  define _G_TYPE_CCT(cp, gt)             (G_GNUC_EXTENSION ({ \
   GTypeClass *__class = (GTypeClass*) cp; GType __t = gt; gboolean __r; \
-  if (__class && __class->g_type == __t) \
+  if (!__class) \
+    __r = FALSE; \
+  else if (__class->g_type == __t) \
     __r = TRUE; \
   else \
     __r = g_type_check_class_is_a (__class, __t); \
@@ -1494,7 +1561,9 @@ G_GNUC_INTERNAL void    g_signal_init           (void); /* sync with gsignal.c *
 }))
 #  define _G_TYPE_CVH(vl, gt)             (G_GNUC_EXTENSION ({ \
   GValue *__val = (GValue*) vl; GType __t = gt; gboolean __r; \
-  if (__val && __val->g_type == __t) \
+  if (!__val) \
+    __r = FALSE; \
+  else if (__val->g_type == __t)		\
     __r = TRUE; \
   else \
     __r = g_type_check_value_holds (__val, __t); \

@@ -60,97 +60,58 @@
  * is called, then it will be filled with any error information.
  *
  * <para id="volume-identifier">
- * It is sometimes necessary to directly access the underlying 
+ * It is sometimes necessary to directly access the underlying
  * operating system object behind a volume (e.g. for passing a volume
  * to an application via the commandline). For this purpose, GIO
  * allows to obtain an 'identifier' for the volume. There can be
  * different kinds of identifiers, such as Hal UDIs, filesystem labels,
  * traditional Unix devices (e.g. <filename>/dev/sda2</filename>),
  * uuids. GIO uses predefind strings as names for the different kinds
- * of identifiers: #G_VOLUME_IDENTIFIER_KIND_HAL_UDI, 
- * #G_VOLUME_IDENTIFIER_KIND_LABEL, etc. Use g_volume_get_identifier() 
+ * of identifiers: #G_VOLUME_IDENTIFIER_KIND_HAL_UDI,
+ * #G_VOLUME_IDENTIFIER_KIND_LABEL, etc. Use g_volume_get_identifier()
  * to obtain an identifier for a volume.
  * </para>
- **/
+ *
+ * Note that #G_VOLUME_IDENTIFIER_KIND_HAL_UDI will only be available
+ * when the gvfs hal volume monitor is in use. Other volume monitors
+ * will generally be able to provide the #G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE
+ * identifier, which can be used to obtain a hal device by means of
+ * libhal_manger_find_device_string_match().
+ */
 
-static void g_volume_base_init (gpointer g_class);
-static void g_volume_class_init (gpointer g_class,
-                                 gpointer class_data);
-
-GType
-g_volume_get_type (void)
-{
-  static volatile gsize g_define_type_id__volatile = 0;
-
-  if (g_once_init_enter (&g_define_type_id__volatile))
-    {
-      const GTypeInfo volume_info =
-      {
-        sizeof (GVolumeIface), /* class_size */
-	g_volume_base_init,   /* base_init */
-	NULL,		/* base_finalize */
-	g_volume_class_init,
-	NULL,		/* class_finalize */
-	NULL,		/* class_data */
-	0,
-	0,              /* n_preallocs */
-	NULL
-      };
-      GType g_define_type_id =
-	g_type_register_static (G_TYPE_INTERFACE, I_("GVolume"),
-				&volume_info, 0);
-
-      g_type_interface_add_prerequisite (g_define_type_id, G_TYPE_OBJECT);
-
-      g_once_init_leave (&g_define_type_id__volatile, g_define_type_id);
-    }
-
-  return g_define_type_id__volatile;
-}
+typedef GVolumeIface GVolumeInterface;
+G_DEFINE_INTERFACE(GVolume, g_volume, G_TYPE_OBJECT)
 
 static void
-g_volume_class_init (gpointer g_class,
-                     gpointer class_data)
+g_volume_default_init (GVolumeInterface *iface)
 {
-}
+  /**
+   * GVolume::changed:
+   * 
+   * Emitted when the volume has been changed.
+   **/
+  g_signal_new (I_("changed"),
+		G_TYPE_VOLUME,
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (GVolumeIface, changed),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__VOID,
+		G_TYPE_NONE, 0);
 
-static void
-g_volume_base_init (gpointer g_class)
-{
-  static gboolean initialized = FALSE;
-
-  if (! initialized)
-    {
-     /**
-      * GVolume::changed:
-      * 
-      * Emitted when the volume has been changed.
-      **/
-      g_signal_new (I_("changed"),
-                    G_TYPE_VOLUME,
-                    G_SIGNAL_RUN_LAST,
-                    G_STRUCT_OFFSET (GVolumeIface, changed),
-                    NULL, NULL,
-                    g_cclosure_marshal_VOID__VOID,
-                    G_TYPE_NONE, 0);
-
-     /**
-      * GVolume::removed:
-      * 
-      * This signal is emitted when the #GVolume have been removed. If
-      * the recipient is holding references to the object they should
-      * release them so the object can be finalized.
-      **/
-      g_signal_new (I_("removed"),
-                    G_TYPE_VOLUME,
-                    G_SIGNAL_RUN_LAST,
-                    G_STRUCT_OFFSET (GVolumeIface, removed),
-                    NULL, NULL,
-                    g_cclosure_marshal_VOID__VOID,
-                    G_TYPE_NONE, 0);
-
-      initialized = TRUE;
-    }
+  /**
+   * GVolume::removed:
+   * 
+   * This signal is emitted when the #GVolume have been removed. If
+   * the recipient is holding references to the object they should
+   * release them so the object can be finalized.
+   **/
+  g_signal_new (I_("removed"),
+		G_TYPE_VOLUME,
+		G_SIGNAL_RUN_LAST,
+		G_STRUCT_OFFSET (GVolumeIface, removed),
+		NULL, NULL,
+		g_cclosure_marshal_VOID__VOID,
+		G_TYPE_NONE, 0);
 }
 
 /**
@@ -423,6 +384,8 @@ g_volume_mount_finish (GVolume       *volume,
  * Ejects a volume. This is an asynchronous operation, and is
  * finished by calling g_volume_eject_finish() with the @volume
  * and #GAsyncResult returned in the @callback.
+ *
+ * Deprecated: 2.22: Use g_volume_eject_with_operation() instead.
  **/
 void
 g_volume_eject (GVolume             *volume,
@@ -459,6 +422,8 @@ g_volume_eject (GVolume             *volume,
  * @error will be set to contain the errors and %FALSE will be returned.
  * 
  * Returns: %TRUE, %FALSE if operation failed.
+ *
+ * Deprecated: 2.22: Use g_volume_eject_with_operation_finish() instead.
  **/
 gboolean
 g_volume_eject_finish (GVolume       *volume,
@@ -479,6 +444,91 @@ g_volume_eject_finish (GVolume       *volume,
   
   iface = G_VOLUME_GET_IFACE (volume);
   return (* iface->eject_finish) (volume, result, error);
+}
+
+/**
+ * g_volume_eject_with_operation:
+ * @volume: a #GVolume.
+ * @flags: flags affecting the unmount if required for eject
+ * @mount_operation: a #GMountOperation or %NULL to avoid user interaction.
+ * @cancellable: optional #GCancellable object, %NULL to ignore.
+ * @callback: a #GAsyncReadyCallback, or %NULL.
+ * @user_data: user data passed to @callback.
+ *
+ * Ejects a volume. This is an asynchronous operation, and is
+ * finished by calling g_volume_eject_with_operation_finish() with the @volume
+ * and #GAsyncResult data returned in the @callback.
+ *
+ * Since: 2.22
+ **/
+void
+g_volume_eject_with_operation (GVolume              *volume,
+                               GMountUnmountFlags   flags,
+                               GMountOperation     *mount_operation,
+                               GCancellable        *cancellable,
+                               GAsyncReadyCallback  callback,
+                               gpointer             user_data)
+{
+  GVolumeIface *iface;
+
+  g_return_if_fail (G_IS_VOLUME (volume));
+
+  iface = G_VOLUME_GET_IFACE (volume);
+
+  if (iface->eject == NULL && iface->eject_with_operation == NULL)
+    {
+      g_simple_async_report_error_in_idle (G_OBJECT (volume),
+					   callback, user_data,
+					   G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+					   /* Translators: This is an error
+					    * message for volume objects that
+					    * don't implement any of eject or eject_with_operation. */
+					   _("volume doesn't implement eject or eject_with_operation"));
+      return;
+    }
+
+  if (iface->eject_with_operation != NULL)
+    (* iface->eject_with_operation) (volume, flags, mount_operation, cancellable, callback, user_data);
+  else
+    (* iface->eject) (volume, flags, cancellable, callback, user_data);
+}
+
+/**
+ * g_volume_eject_with_operation_finish:
+ * @volume: a #GVolume.
+ * @result: a #GAsyncResult.
+ * @error: a #GError location to store the error occuring, or %NULL to
+ *     ignore.
+ *
+ * Finishes ejecting a volume. If any errors occurred during the operation,
+ * @error will be set to contain the errors and %FALSE will be returned.
+ *
+ * Returns: %TRUE if the volume was successfully ejected. %FALSE otherwise.
+ *
+ * Since: 2.22
+ **/
+gboolean
+g_volume_eject_with_operation_finish (GVolume        *volume,
+                                      GAsyncResult  *result,
+                                      GError       **error)
+{
+  GVolumeIface *iface;
+
+  g_return_val_if_fail (G_IS_VOLUME (volume), FALSE);
+  g_return_val_if_fail (G_IS_ASYNC_RESULT (result), FALSE);
+
+  if (G_IS_SIMPLE_ASYNC_RESULT (result))
+    {
+      GSimpleAsyncResult *simple = G_SIMPLE_ASYNC_RESULT (result);
+      if (g_simple_async_result_propagate_error (simple, error))
+        return FALSE;
+    }
+
+  iface = G_VOLUME_GET_IFACE (volume);
+  if (iface->eject_with_operation_finish != NULL)
+    return (* iface->eject_with_operation_finish) (volume, result, error);
+  else
+    return (* iface->eject_finish) (volume, result, error);
 }
 
 /**

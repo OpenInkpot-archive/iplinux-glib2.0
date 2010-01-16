@@ -1,3 +1,41 @@
+=== ChangeLog discontinued ===
+
+	With the move to git, GLib is switching from a ChangeLog file
+	to relying on commit messages to provide change history. Please
+	see README.commits for guidance on the expected message format.
+
+2009-03-26  Carlos Garnacho  <carlosg@gnome.org>
+
+	Bug 575270 – GVolumeMonitor::mount-pre-unmount not being emitted
+
+	* gunixmount.c (eject_unmount_cb) (eject_unmount_do_cb)
+	(eject_unmount_do): Emit ::mount-pre-unmount and wait 500msec before
+	actually trying to unmount.
+
+2009-03-17  Colin Walters  <walters@redhat.com>
+
+	Bug 575708 - runaway inotify madness ...
+
+	* gfilemonitor.c: Queue up events in a local list and
+	fire one idle, instead of queuing lots of individual
+	idles which has bad performance behavior.
+
+2009-03-17  Alexander Larsson  <alexl@redhat.com>
+
+        * glocalfileinputstream.c:
+        * glocalfileoutputstream.c:
+	fix attributes argument of query_info methods to
+	be "const char *".
+
+2009-03-16  Alexander Larsson  <alexl@redhat.com>
+
+	Bug 575555 – Use fsync() when replacing files to avoid data loss on crash
+
+        * glocalfileoutputstream.c:
+        (g_local_file_output_stream_close):
+        (_g_local_file_output_stream_replace):
+	fsync temp file before closing if replacing target file
+
 2009-03-13  Matthias Clasen  <mclasen@redhat.com>
 
 	* === Released 2.20.0 ===

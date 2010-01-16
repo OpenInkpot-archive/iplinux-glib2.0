@@ -57,6 +57,12 @@
 
 #include "galias.h"
 
+/* We try to terminate strings in unknown charsets with this many zero bytes
+ * to ensure that multibyte strings really are nul-terminated when we return
+ * them from g_convert() and friends.
+ */
+#define NUL_TERMINATOR_LENGTH 4
+
 GQuark 
 g_convert_error_quark (void)
 {
@@ -595,9 +601,9 @@ g_convert_with_iconv (const gchar *str,
 
   p = str;
   inbytes_remaining = len;
-  outbuf_size = len + 1; /* + 1 for nul in case len == 1 */
+  outbuf_size = len + NUL_TERMINATOR_LENGTH;
   
-  outbytes_remaining = outbuf_size - 1; /* -1 for nul */
+  outbytes_remaining = outbuf_size - NUL_TERMINATOR_LENGTH;
   outp = dest = g_malloc (outbuf_size);
 
   while (!done && !have_error)
@@ -623,7 +629,7 @@ g_convert_with_iconv (const gchar *str,
 		dest = g_realloc (dest, outbuf_size);
 		
 		outp = dest + used;
-		outbytes_remaining = outbuf_size - used - 1; /* -1 for nul */
+		outbytes_remaining = outbuf_size - used - NUL_TERMINATOR_LENGTH;
 	      }
 	      break;
 	    case EILSEQ:
@@ -633,10 +639,13 @@ g_convert_with_iconv (const gchar *str,
 	      have_error = TRUE;
 	      break;
 	    default:
-	      if (error)
-		g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED,
-			     _("Error during conversion: %s"),
-			     g_strerror (errno));
+              {
+                int errsv = errno;
+                
+                g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED,
+                             _("Error during conversion: %s"),
+                             g_strerror (errsv));
+              }
 	      have_error = TRUE;
 	      break;
 	    }
@@ -654,7 +663,7 @@ g_convert_with_iconv (const gchar *str,
 	}
     }
 
-  *outp = '\0';
+  memset (outp, 0, NUL_TERMINATOR_LENGTH);
   
   if (bytes_read)
     *bytes_read = p - str;
@@ -881,8 +890,8 @@ g_convert_with_fallback (const gchar *str,
    */
   p = utf8;
 
-  outbuf_size = len + 1; /* + 1 for nul in case len == 1 */
-  outbytes_remaining = outbuf_size - 1; /* -1 for nul */
+  outbuf_size = len + NUL_TERMINATOR_LENGTH;
+  outbytes_remaining = outbuf_size - NUL_TERMINATOR_LENGTH;
   outp = dest = g_malloc (outbuf_size);
 
   while (!done && !have_error)
@@ -906,7 +915,7 @@ g_convert_with_fallback (const gchar *str,
 		dest = g_realloc (dest, outbuf_size);
 		
 		outp = dest + used;
-		outbytes_remaining = outbuf_size - used - 1; /* -1 for nul */
+		outbytes_remaining = outbuf_size - used - NUL_TERMINATOR_LENGTH;
 		
 		break;
 	      }
@@ -940,9 +949,14 @@ g_convert_with_fallback (const gchar *str,
 		}
 	      /* fall thru if p is NULL */
 	    default:
-	      g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED,
-			   _("Error during conversion: %s"),
-			   g_strerror (errno));
+              {
+                int errsv = errno;
+
+                g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED,
+                             _("Error during conversion: %s"),
+                             g_strerror (errsv));
+              }
+
 	      have_error = TRUE;
 	      break;
 	    }
@@ -970,7 +984,7 @@ g_convert_with_fallback (const gchar *str,
 
   /* Cleanup
    */
-  *outp = '\0';
+  memset (outp, 0, NUL_TERMINATOR_LENGTH);
   
   close_converter (cd);
 

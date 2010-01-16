@@ -187,10 +187,17 @@ gboolean _ik_startup (void (*cb)(ik_event_t *event))
   /* Ignore multi-calls */
   if (initialized) 
     return inotify_instance_fd >= 0;
-  
+
   initialized = TRUE;
-  inotify_instance_fd = inotify_init ();
-  
+
+#ifdef HAVE_INOTIFY_INIT1
+  inotify_instance_fd = inotify_init1 (IN_CLOEXEC);
+#else
+  inotify_instance_fd = -1;
+#endif
+  if (inotify_instance_fd < 0)
+    inotify_instance_fd = inotify_init ();
+
   if (inotify_instance_fd < 0)
     return FALSE;
 

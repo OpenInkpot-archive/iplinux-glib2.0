@@ -26,7 +26,8 @@ Types which are easier to use than their standard C counterparts -
 
 <listitem><para>
 Types which correspond exactly to standard C types, but are included
-for completeness - #gchar, #gint, #gshort, #glong, #gfloat, #gdouble.
+for completeness - #gchar, #gint, #gshort, #glong, #gfloat, #gdouble,
+#gintptr, #guintptr.
 </para></listitem>
 </itemizedlist>
 
@@ -270,6 +271,10 @@ To print or scan values of this type, use
 A signed integer type that is used for file offsets, corresponding to the 
 C99 type off64_t.
 </para>
+<para>
+To print or scan values of this type, use
+%G_GOFFSET_MODIFIER and/or %G_GOFFSET_FORMAT.
+</para>
 
 Since: 2.14
 
@@ -282,5 +287,31 @@ See also #G_GINT64_CONSTANT.
 
 @val: a literal integer value, e.g. 0x1d636b02300a7aa7.
 Since: 2.20
+
+
+<!-- ##### TYPEDEF gintptr ##### -->
+<para>
+Corresponds to the C99 type <type>intptr_t</type>, a signed integer type that
+can hold any pointer.
+</para>
+<para>
+To print or scan values of this type, use
+%G_GINTPTR_MODIFIER and/or %G_GINTPTR_FORMAT.
+</para>
+
+Since: 2.18
+
+
+<!-- ##### TYPEDEF guintptr ##### -->
+<para>
+Corresponds to the C99 type <type>uintptr_t</type>, an unsigned integer type that
+can hold any pointer.
+</para>
+<para>
+To print or scan values of this type, use
+%G_GINTPTR_MODIFIER and/or %G_GUINTPTR_FORMAT.
+</para>
+
+Since: 2.18
 
 

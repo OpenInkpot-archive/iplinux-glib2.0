@@ -2038,7 +2038,7 @@ g_set_application_name (const gchar *application_name)
   G_UNLOCK (g_application_name);
 
   if (already_set)
-    g_warning ("g_set_application() name called multiple times");
+    g_warning ("g_set_application_name() called multiple times");
 }
 
 /**
@@ -2470,6 +2470,59 @@ load_user_special_dirs (void)
 }
 
 #endif /* G_OS_UNIX && !HAVE_CARBON */
+
+
+/**
+ * g_reload_user_special_dirs_cache:
+ *
+ * Resets the cache used for g_get_user_special_dir(), so
+ * that the latest on-disk version is used. Call this only
+ * if you just changed the data on disk yourself.
+ *
+ * Due to threadsafety issues this may cause leaking of strings
+ * that were previously returned from g_get_user_special_dir()
+ * that can't be freed. We ensure to only leak the data for
+ * the directories that actually changed value though.
+ *
+ * Since: 2.22
+ */
+void
+g_reload_user_special_dirs_cache (void)
+{
+  int i;
+
+  G_LOCK (g_utils_global);
+
+  if (g_user_special_dirs != NULL)
+    {
+      /* save a copy of the pointer, to check if some memory can be preserved */
+      char **old_g_user_special_dirs = g_user_special_dirs;
+      char *old_val;
+
+      /* recreate and reload our cache */
+      g_user_special_dirs = g_new0 (gchar *, G_USER_N_DIRECTORIES);
+      load_user_special_dirs ();
+
+      /* only leak changed directories */
+      for (i = 0; i < G_USER_N_DIRECTORIES; i++)
+        {
+	  old_val = old_g_user_special_dirs[i];
+	  if (g_strcmp0 (old_val, g_user_special_dirs[i]) == 0)
+            {
+	      /* don't leak */
+	      g_free (g_user_special_dirs[i]);
+	      g_user_special_dirs[i] = old_val;
+            }
+	  else
+            g_free (old_val);
+        }
+
+      /* free the old array */
+      g_free (old_g_user_special_dirs);
+    }
+
+  G_UNLOCK (g_utils_global);
+}
 
 /**
  * g_get_user_special_dir:
@@ -3193,6 +3246,84 @@ guint
 g_int_hash (gconstpointer v)
 {
   return *(const gint*) v;
+}
+
+/**
+ * g_int64_equal:
+ * @v1: a pointer to a #gint64 key.
+ * @v2: a pointer to a #gint64 key to compare with @v1.
+ *
+ * Compares the two #gint64 values being pointed to and returns 
+ * %TRUE if they are equal.
+ * It can be passed to g_hash_table_new() as the @key_equal_func
+ * parameter, when using pointers to 64-bit integers as keys in a #GHashTable.
+ * 
+ * Returns: %TRUE if the two keys match.
+ *
+ * Since: 2.22
+ */
+gboolean
+g_int64_equal (gconstpointer v1,
+               gconstpointer v2)
+{
+  return *((const gint64*) v1) == *((const gint64*) v2);
+}
+
+/**
+ * g_int64_hash:
+ * @v: a pointer to a #gint64 key
+ *
+ * Converts a pointer to a #gint64 to a hash value.
+ * It can be passed to g_hash_table_new() as the @hash_func parameter, 
+ * when using pointers to 64-bit integers values as keys in a #GHashTable.
+ *
+ * Returns: a hash value corresponding to the key.
+ *
+ * Since: 2.22
+ */
+guint
+g_int64_hash (gconstpointer v)
+{
+  return (guint) *(const gint64*) v;
+}
+
+/**
+ * g_double_equal:
+ * @v1: a pointer to a #gdouble key.
+ * @v2: a pointer to a #gdouble key to compare with @v1.
+ *
+ * Compares the two #gdouble values being pointed to and returns 
+ * %TRUE if they are equal.
+ * It can be passed to g_hash_table_new() as the @key_equal_func
+ * parameter, when using pointers to doubles as keys in a #GHashTable.
+ * 
+ * Returns: %TRUE if the two keys match.
+ *
+ * Since: 2.22
+ */
+gboolean
+g_double_equal (gconstpointer v1,
+                gconstpointer v2)
+{
+  return *((const gdouble*) v1) == *((const gdouble*) v2);
+}
+
+/**
+ * g_double_hash:
+ * @v: a pointer to a #gdouble key
+ *
+ * Converts a pointer to a #gdouble to a hash value.
+ * It can be passed to g_hash_table_new() as the @hash_func parameter, 
+ * when using pointers to doubles as keys in a #GHashTable.
+ *
+ * Returns: a hash value corresponding to the key.
+ *
+ * Since: 2.22
+ */
+guint
+g_double_hash (gconstpointer v)
+{
+  return (guint) *(const gdouble*) v;
 }
 
 /**

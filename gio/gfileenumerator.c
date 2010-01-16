@@ -44,7 +44,7 @@
  *
  * To get the next file's information from a #GFileEnumerator, use 
  * g_file_enumerator_next_file() or its asynchronous version, 
- * g_file_enumerator_next_file_async(). Note that the asynchronous 
+ * g_file_enumerator_next_files_async(). Note that the asynchronous 
  * version will return a list of #GFileInfo<!---->s, whereas the 
  * synchronous will only return the next file in the enumerator.
  *
@@ -392,7 +392,7 @@ g_file_enumerator_next_files_async (GFileEnumerator     *enumerator,
  * Finishes the asynchronous operation started with g_file_enumerator_next_files_async().
  * 
  * Returns: a #GList of #GFileInfo<!---->s. You must free the list with 
- *     g_list_free() and unref the infos with g_object_unref when you're 
+ *     g_list_free() and unref the infos with g_object_unref() when you're 
  *     done with them.
  **/
 GList *
@@ -589,7 +589,7 @@ g_file_enumerator_set_pending (GFileEnumerator *enumerator,
  *
  * Returns: the #GFile which is being enumerated.
  *
- * Since: 2.18.
+ * Since: 2.18
  */
 GFile *
 g_file_enumerator_get_container (GFileEnumerator *enumerator)

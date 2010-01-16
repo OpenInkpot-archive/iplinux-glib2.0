@@ -297,6 +297,39 @@ extern GType _g_win32_volume_monitor_get_type (void);
 extern GType g_win32_directory_monitor_get_type (void);
 extern GType _g_winhttp_vfs_get_type (void);
 
+#ifdef G_PLATFORM_WIN32
+
+#include <windows.h>
+
+static HMODULE gio_dll = NULL;
+
+#ifdef DLL_EXPORT
+
+BOOL WINAPI
+DllMain (HINSTANCE hinstDLL,
+	 DWORD     fdwReason,
+	 LPVOID    lpvReserved)
+{
+  if (fdwReason == DLL_PROCESS_ATTACH)
+      gio_dll = hinstDLL;
+
+  return TRUE;
+}
+
+#endif
+
+#undef GIO_MODULE_DIR
+
+/* GIO_MODULE_DIR is used only in code called just once,
+ * so no problem leaking this
+ */
+#define GIO_MODULE_DIR \
+  g_build_filename (g_win32_get_package_installation_directory_of_module (gio_dll), \
+		    "lib/gio/modules", \
+		    NULL)
+
+#endif
+
 void
 _g_io_modules_ensure_extension_points_registered (void)
 {
@@ -328,6 +361,9 @@ _g_io_modules_ensure_extension_points_registered (void)
       
       ep = g_io_extension_point_register (G_VFS_EXTENSION_POINT_NAME);
       g_io_extension_point_set_required_type (ep, G_TYPE_VFS);
+
+      ep = g_io_extension_point_register ("gsettings-backend");
+      g_io_extension_point_set_required_type (ep, G_TYPE_OBJECT);
     }
   
   G_UNLOCK (registered_extensions);
